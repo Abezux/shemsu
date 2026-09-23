@@ -7,15 +7,25 @@ import {
   BarChart3, 
   Store, 
   Sparkles,
-  Wifi
+  Wifi,
+  Settings
 } from 'lucide-react';
 import { api } from '@/services/api';
 import { StoreSettings } from '@/types';
+import SettingsModal from '@/components/settings/SettingsModal';
 
 interface NavbarProps {
   activeTab: string;
   onNavigate: (tab: string) => void;
 }
+
+const BUSINESS_TYPE_BADGES: Record<string, { label: string; icon: string }> = {
+  MINI_SHOP: { label: 'Mini-Shop', icon: '🛒' },
+  PHARMACY: { label: 'Pharmacy', icon: '💊' },
+  RESTAURANT: { label: 'Restaurant', icon: '🍔' },
+  SALON: { label: 'Salon', icon: '✂️' },
+  GENERAL_RETAIL: { label: 'Retail POS', icon: '🏬' },
+};
 
 export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
   const [settings, setSettings] = useState<StoreSettings>({
@@ -23,15 +33,23 @@ export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
     currency_symbol: '$',
     currency_code: 'USD',
     low_stock_alerts_enabled: true,
+    business_type: 'GENERAL_RETAIL',
+    expiry_alert_days: 30,
+    custom_attributes: [],
   });
   const [isSeeding, setIsSeeding] = useState<boolean>(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+
+  const loadSettings = () => {
+    api.getSettings().then(setSettings).catch(() => {});
+  };
 
   useEffect(() => {
-    api.getSettings().then(setSettings).catch(() => {});
+    loadSettings();
   }, []);
 
   const handleSeed = async () => {
-    if (confirm('Load pre-populated demo kiosk catalog (drinks, snacks, groceries)? This will refresh catalog.')) {
+    if (confirm('Load pre-populated demo kiosk catalog (drinks, snacks, groceries, medicines)? This will refresh catalog.')) {
       setIsSeeding(true);
       try {
         await api.seedDemo();
@@ -43,6 +61,14 @@ export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
       }
     }
   };
+
+  const handleSaveSettings = async (newSettings: StoreSettings) => {
+    await api.updateSettings(newSettings);
+    loadSettings();
+    window.location.reload();
+  };
+
+  const badge = BUSINESS_TYPE_BADGES[settings.business_type || 'GENERAL_RETAIL'] || BUSINESS_TYPE_BADGES.GENERAL_RETAIL;
 
   const navLinks = [
     { id: 'sell', label: 'Sell Register', icon: ShoppingCart },
@@ -64,8 +90,8 @@ export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
             <div>
               <h1 className="font-bold text-lg tracking-tight leading-tight flex items-center gap-2">
                 {settings.store_name}
-                <span className="text-xs font-normal px-2 py-0.5 rounded-full bg-slate-800 text-emerald-400 border border-emerald-500/20">
-                  MVP POS
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                  <span>{badge.icon}</span> {badge.label}
                 </span>
               </h1>
               <div className="flex items-center gap-3 text-xs text-slate-400">
@@ -89,6 +115,14 @@ export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
               <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
               <span className="hidden sm:inline">{isSeeding ? 'Seeding...' : 'Load Kiosk Demo Catalog'}</span>
               <span className="sm:hidden">Demo Catalog</span>
+            </button>
+
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all"
+              title="Store settings & Business Vertical"
+            >
+              <Settings className="w-4 h-4 text-emerald-400" />
             </button>
           </div>
         </div>
@@ -141,6 +175,14 @@ export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
           })}
         </div>
       </nav>
+
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        settings={settings}
+        onClose={() => setIsSettingsOpen(false)}
+        onSave={handleSaveSettings}
+      />
     </>
   );
 }

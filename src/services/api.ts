@@ -1,4 +1,15 @@
-import { Product, Sale, SaleItem, StockMovement, StoreSettings } from '@/types';
+import { 
+  Product, 
+  Sale, 
+  SaleItem, 
+  StockMovement, 
+  StoreSettings, 
+  BusinessType, 
+  MetricTrend, 
+  HourlySalesPoint, 
+  RevenueTrendPoint, 
+  StockHealthItem 
+} from '@/types';
 import { INITIAL_SAMPLE_PRODUCTS } from '@/lib/seed';
 
 const PRODUCTS_KEY = 'shemsu_products_v1';
@@ -22,9 +33,34 @@ function setLocal<T>(key: string, val: T): void {
   localStorage.setItem(key, JSON.stringify(val));
 }
 
-function initDataIfEmpty() {
-  const existingProds = getLocal<Product[]>(PRODUCTS_KEY, []);
-  if (existingProds.length === 0) {
+function migrateAndInitData() {
+  const products = getLocal<Product[]>(PRODUCTS_KEY, []);
+  const settings = getLocal<Partial<StoreSettings>>(SETTINGS_KEY, {});
+
+  // Migrate Settings
+  let updatedSettings = false;
+  if (!settings.business_type) {
+    settings.business_type = 'GENERAL_RETAIL';
+    updatedSettings = true;
+  }
+  if (settings.expiry_alert_days === undefined) {
+    settings.expiry_alert_days = 30;
+    updatedSettings = true;
+  }
+  if (!settings.store_name) {
+    settings.store_name = 'Corner Mini-Market & Kiosk';
+    settings.currency_symbol = '$';
+    settings.currency_code = 'USD';
+    settings.low_stock_alerts_enabled = true;
+    updatedSettings = true;
+  }
+
+  if (updatedSettings) {
+    setLocal(SETTINGS_KEY, settings);
+  }
+
+  // Migrate Products
+  if (products.length === 0) {
     const defaultProducts: Product[] = INITIAL_SAMPLE_PRODUCTS.map((p, idx) => ({
       ...p,
       id: `prod-${idx + 1}`,
@@ -45,19 +81,31 @@ function initDataIfEmpty() {
 
     setLocal(PRODUCTS_KEY, defaultProducts);
     setLocal(MOVEMENTS_KEY, initialMovements);
+  } else {
+    // Migration check for existing products missing unit_type
+    let productMigrated = false;
+    products.forEach((p) => {
+      if (!p.unit_type) {
+        p.unit_type = 'piece';
+        productMigrated = true;
+      }
+    });
+    if (productMigrated) {
+      setLocal(PRODUCTS_KEY, products);
+    }
   }
 }
 
 export const api = {
   getProducts: async (): Promise<Product[]> => {
-    initDataIfEmpty();
+    migrateAndInitData();
     return getLocal<Product[]>(PRODUCTS_KEY, []);
   },
 
   saveProduct: async (
     productData: Partial<Product> & { name: string; price: number; stock_quantity: number }
   ): Promise<Product> => {
-    initDataIfEmpty();
+    migrateAndInitData();
     const products = getLocal<Product[]>(PRODUCTS_KEY, []);
     const movements = getLocal<StockMovement[]>(MOVEMENTS_KEY, []);
     const now = new Date().toISOString();
@@ -97,6 +145,9 @@ export const api = {
       cost_price: productData.cost_price,
       stock_quantity: productData.stock_quantity,
       low_stock_threshold: productData.low_stock_threshold ?? 5,
+      unit_type: productData.unit_type || 'piece',
+      business_type: productData.business_type,
+      attributes: productData.attributes || {},
       image_url: productData.image_url || '📦',
       created_at: now,
       updated_at: now,
@@ -178,15 +229,14 @@ export const api = {
       const product = products.find((p) => p.id === itemReq.product_id);
       if (!product) continue;
 
-      const lineTotal = product.price * itemReq.quantity;
+      const lineTotal = Math.round(product.price * itemReq.quantity);
       totalAmount += lineTotal;
       totalItemsCount += itemReq.quantity;
 
-      // 1. Deduct stock immediately
+      // Deduct stock
       product.stock_quantity = Math.max(0, product.stock_quantity - itemReq.quantity);
       product.updated_at = now;
 
-      // 2. Add SaleItem record
       const saleItem: SaleItem = {
         id: `si-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
         sale_id: saleId,
@@ -195,10 +245,10 @@ export const api = {
         quantity: itemReq.quantity,
         unit_price: product.price,
         line_total: lineTotal,
+        unit_type: product.unit_type || 'piece',
       };
       saleItems.push(saleItem);
 
-      // 3. Log Stock Movement audit record
       movements.unshift({
         id: `sm-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
         product_id: product.id,
@@ -279,11 +329,15 @@ export const api = {
   },
 
   getSettings: async (): Promise<StoreSettings> => {
+    migrateAndInitData();
     return getLocal<StoreSettings>(SETTINGS_KEY, {
       store_name: 'Corner Mini-Market & Kiosk',
       currency_symbol: '$',
       currency_code: 'USD',
       low_stock_alerts_enabled: true,
+      business_type: 'GENERAL_RETAIL',
+      expiry_alert_days: 30,
+      custom_attributes: [],
     });
   },
 
@@ -318,5 +372,171 @@ export const api = {
     setLocal(MOVEMENTS_KEY, initialMovements);
 
     return defaultProducts;
+  },
+
+  // -------------------------------------------------------------
+  // PHASE 2 ANALYTICS & INSIGHT AGGREGATION FUNCTIONS
+  // -------------------------------------------------------------
+
+  getMetricTrends: (sales: Sale[], daysPeriod: number = 1): {
+    revenueTrend: MetricTrend;
+    salesCountTrend: MetricTrend;
+    unitsSoldTrend: MetricTrend;
+  } => {
+    const now = new Date();
+    const currentStart = new Date(now.getTime() - daysPeriod * 86400000).getTime();
+    const previousStart = new Date(now.getTime() - 2 * daysPeriod * 86400000).getTime();
+
+    let curRev = 0, curSales = 0, curUnits = 0;
+    let prevRev = 0, prevSales = 0, prevUnits = 0;
+
+    sales.forEach((s) => {
+      if (s.status !== 'COMPLETED') return;
+      const t = new Date(s.timestamp).getTime();
+
+      if (t >= currentStart) {
+        curRev += s.total_amount;
+        curSales += 1;
+        curUnits += s.items_count;
+      } else if (t >= previousStart && t < currentStart) {
+        prevRev += s.total_amount;
+        prevSales += 1;
+        prevUnits += s.items_count;
+      }
+    });
+
+    const calcPercent = (cur: number, prev: number): MetricTrend => {
+      if (prev === 0) {
+        return {
+          currentValue: cur,
+          previousValue: prev,
+          percentageChange: cur > 0 ? 100 : 0,
+          isIncrease: cur >= prev,
+        };
+      }
+      const change = ((cur - prev) / prev) * 100;
+      return {
+        currentValue: cur,
+        previousValue: prev,
+        percentageChange: Math.round(change * 10) / 10,
+        isIncrease: change >= 0,
+      };
+    };
+
+    return {
+      revenueTrend: calcPercent(curRev, prevRev),
+      salesCountTrend: calcPercent(curSales, prevSales),
+      unitsSoldTrend: calcPercent(curUnits, prevUnits),
+    };
+  },
+
+  getRevenueTrendData: (sales: Sale[], days: number = 7): RevenueTrendPoint[] => {
+    const points: RevenueTrendPoint[] = [];
+    const now = new Date();
+
+    for (let i = days - 1; i >= 0; i--) {
+      const targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      const prevDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i - days);
+
+      const targetDateStr = targetDate.toDateString();
+      const prevDateStr = prevDate.toDateString();
+
+      let currentRev = 0;
+      let prevRev = 0;
+
+      sales.forEach((s) => {
+        if (s.status !== 'COMPLETED') return;
+        const dStr = new Date(s.timestamp).toDateString();
+        if (dStr === targetDateStr) currentRev += s.total_amount;
+        if (dStr === prevDateStr) prevRev += s.total_amount;
+      });
+
+      points.push({
+        dateLabel: targetDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+        timestamp: targetDate.toISOString(),
+        currentPeriodRevenue: currentRev,
+        previousPeriodRevenue: prevRev,
+      });
+    }
+
+    return points;
+  },
+
+  getHourlySalesData: (sales: Sale[], daysRange: number = 7): HourlySalesPoint[] => {
+    const hoursMap: Record<number, { count: number; revenue: number }> = {};
+    for (let h = 8; h <= 21; h++) {
+      hoursMap[h] = { count: 0, revenue: 0 };
+    }
+
+    const cutoff = new Date(Date.now() - daysRange * 86400000).getTime();
+
+    sales.forEach((s) => {
+      if (s.status !== 'COMPLETED') return;
+      const d = new Date(s.timestamp);
+      if (d.getTime() < cutoff) return;
+
+      const hour = d.getHours();
+      if (hoursMap[hour] !== undefined) {
+        hoursMap[hour].count += 1;
+        hoursMap[hour].revenue += s.total_amount;
+      }
+    });
+
+    return Object.entries(hoursMap).map(([hStr, data]) => {
+      const hourNum = parseInt(hStr, 10);
+      const ampm = hourNum >= 12 ? 'PM' : 'AM';
+      const formattedHour = `${hourNum % 12 === 0 ? 12 : hourNum % 12} ${ampm}`;
+
+      return {
+        hour: formattedHour,
+        hourNum,
+        salesCount: data.count,
+        revenue: data.revenue,
+      };
+    });
+  },
+
+  getStockHealthData: (products: Product[], expiryAlertDays: number = 30): StockHealthItem[] => {
+    const now = Date.now();
+    const items: StockHealthItem[] = [];
+
+    products.forEach((p) => {
+      const isLowStock = p.stock_quantity <= p.low_stock_threshold;
+      let isExpiringSoon = false;
+      let daysUntilExpiry: number | undefined = undefined;
+
+      if (p.attributes?.expiry_date) {
+        const expTime = new Date(p.attributes.expiry_date as string).getTime();
+        if (!isNaN(expTime)) {
+          const diffDays = Math.ceil((expTime - now) / 86400000);
+          daysUntilExpiry = diffDays;
+          if (diffDays <= expiryAlertDays) {
+            isExpiringSoon = true;
+          }
+        }
+      }
+
+      if (isLowStock || isExpiringSoon) {
+        const ratio = p.low_stock_threshold > 0 
+          ? Math.min(1, Math.max(0, p.stock_quantity / (p.low_stock_threshold * 2)))
+          : 0;
+
+        items.push({
+          product: p,
+          currentStock: p.stock_quantity,
+          threshold: p.low_stock_threshold,
+          ratio,
+          isLowStock,
+          isExpiringSoon,
+          daysUntilExpiry,
+        });
+      }
+    });
+
+    return items.sort((a, b) => {
+      if (a.isExpiringSoon && !b.isExpiringSoon) return -1;
+      if (!a.isExpiringSoon && b.isExpiringSoon) return 1;
+      return a.ratio - b.ratio;
+    });
   },
 };

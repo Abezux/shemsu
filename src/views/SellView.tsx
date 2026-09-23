@@ -14,6 +14,9 @@ export default function SellView() {
     currency_symbol: '$',
     currency_code: 'USD',
     low_stock_alerts_enabled: true,
+    business_type: 'GENERAL_RETAIL',
+    expiry_alert_days: 30,
+    custom_attributes: [],
   });
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -65,7 +68,7 @@ export default function SellView() {
       const existing = prevCart.find((item) => item.product.id === product.id);
       if (existing) {
         if (existing.quantity >= product.stock_quantity) {
-          alert(`Cannot add more than available stock (${product.stock_quantity} units)`);
+          alert(`Cannot add more than available stock (${product.stock_quantity} ${product.unit_type || 'units'})`);
           return prevCart;
         }
         return prevCart.map((item) =>

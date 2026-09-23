@@ -1,9 +1,7 @@
-'use client';
-
 import React from 'react';
 import { Product } from '@/types';
 import { formatCurrency } from '@/utils/currency';
-import { AlertTriangle, Plus, PackageX } from 'lucide-react';
+import { AlertTriangle, PackageX, Calendar } from 'lucide-react';
 
 interface ProductTileProps {
   product: Product;
@@ -21,6 +19,8 @@ export default function ProductTile({
   const remainingStock = product.stock_quantity - cartQuantity;
   const isOut = remainingStock <= 0;
   const isLowStock = !isOut && remainingStock <= product.low_stock_threshold;
+  const unitLabel = product.unit_type && product.unit_type !== 'piece' ? product.unit_type : '';
+  const expDate = product.attributes?.expiry_date ? new Date(product.attributes.expiry_date as string) : null;
 
   return (
     <button
@@ -43,16 +43,24 @@ export default function ProductTile({
 
         {cartQuantity > 0 && (
           <span className="bg-emerald-500 text-slate-950 font-bold text-xs px-2.5 py-1 rounded-full shadow-md animate-pulse">
-            {cartQuantity} in cart
+            {cartQuantity} {unitLabel} in cart
           </span>
         )}
       </div>
 
       {/* Middle: Product Name & Category */}
       <div className="mb-3">
-        <span className="text-[10px] font-semibold tracking-wider uppercase text-slate-400 block mb-0.5">
-          {product.category}
-        </span>
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-semibold tracking-wider uppercase text-slate-400 block mb-0.5">
+            {product.category}
+          </span>
+          {expDate && (
+            <span className="text-[9px] text-amber-400 font-bold flex items-center gap-0.5">
+              <Calendar className="w-2.5 h-2.5" /> Exp: {expDate.toLocaleDateString(undefined, { month: 'short' })}
+            </span>
+          )}
+        </div>
+
         <h3 className="font-semibold text-slate-100 text-sm leading-snug line-clamp-2">
           {product.name}
         </h3>
@@ -61,7 +69,7 @@ export default function ProductTile({
       {/* Bottom: Price & Stock Badge */}
       <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between w-full">
         <span className="text-emerald-400 font-bold text-base">
-          {formatCurrency(product.price, currencySymbol)}
+          {formatCurrency(product.price, currencySymbol)} {unitLabel && <span className="text-xs font-normal text-slate-400">/{unitLabel}</span>}
         </span>
 
         <div className="flex items-center gap-1">
@@ -71,11 +79,11 @@ export default function ProductTile({
             </span>
           ) : isLowStock ? (
             <span className="flex items-center gap-1 text-[11px] font-semibold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
-              <AlertTriangle className="w-3 h-3" /> {remainingStock} left
+              <AlertTriangle className="w-3 h-3" /> {remainingStock} {unitLabel || 'left'}
             </span>
           ) : (
             <span className="text-[11px] font-medium text-slate-400">
-              {remainingStock} in stock
+              {remainingStock} {unitLabel || 'in stock'}
             </span>
           )}
         </div>

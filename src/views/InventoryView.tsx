@@ -14,7 +14,9 @@ import {
   Trash2, 
   TrendingUp, 
   PackageX,
-  Layers
+  Layers,
+  ShieldAlert,
+  Calendar
 } from 'lucide-react';
 
 export default function InventoryView() {
@@ -24,11 +26,16 @@ export default function InventoryView() {
     currency_symbol: '$',
     currency_code: 'USD',
     low_stock_alerts_enabled: true,
+    business_type: 'GENERAL_RETAIL',
+    expiry_alert_days: 30,
+    custom_attributes: [],
   });
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [filterLowStockOnly, setFilterLowStockOnly] = useState(false);
+  const [filterExpiringOnly, setFilterExpiringOnly] = useState(false);
 
+  // Modals state
   const [isAddEditOpen, setIsAddEditOpen] = useState(false);
   const [productToEdit, setProductToEdit] = useState<Product | null>(null);
 
@@ -62,18 +69,33 @@ export default function InventoryView() {
     return ['ALL', ...Array.from(set)];
   }, [products]);
 
+  const now = Date.now();
+  const expiryCutoff = now + (settings.expiry_alert_days || 30) * 86400000;
+
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
       const matchesCat = selectedCategory === 'ALL' || p.category === selectedCategory;
       const matchesSearch =
         p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.category.toLowerCase().includes(searchQuery.toLowerCase());
+        p.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (p.attributes?.batch_no ? String(p.attributes.batch_no).toLowerCase().includes(searchQuery.toLowerCase()) : false);
+
       const matchesLowStock = !filterLowStockOnly || p.stock_quantity <= p.low_stock_threshold;
 
-      return matchesCat && matchesSearch && matchesLowStock;
-    });
-  }, [products, selectedCategory, searchQuery, filterLowStockOnly]);
+      let matchesExpiring = true;
+      if (filterExpiringOnly) {
+        if (!p.attributes?.expiry_date) matchesExpiring = false;
+        else {
+          const exp = new Date(p.attributes.expiry_date as string).getTime();
+          matchesExpiring = !isNaN(exp) && exp <= expiryCutoff;
+        }
+      }
 
+      return matchesCat && matchesSearch && matchesLowStock && matchesExpiring;
+    });
+  }, [products, selectedCategory, searchQuery, filterLowStockOnly, filterExpiringOnly, expiryCutoff]);
+
+  // Inventory KPI calculations
   const totalValuationCents = useMemo(() => {
     return products.reduce((sum, p) => sum + p.price * p.stock_quantity, 0);
   }, [products]);
@@ -82,9 +104,13 @@ export default function InventoryView() {
     return products.filter((p) => p.stock_quantity > 0 && p.stock_quantity <= p.low_stock_threshold).length;
   }, [products]);
 
-  const outOfStockCount = useMemo(() => {
-    return products.filter((p) => p.stock_quantity <= 0).length;
-  }, [products]);
+  const expiringCount = useMemo(() => {
+    return products.filter((p) => {
+      if (!p.attributes?.expiry_date) return false;
+      const exp = new Date(p.attributes.expiry_date as string).getTime();
+      return !isNaN(exp) && exp <= expiryCutoff;
+    }).length;
+  }, [products, expiryCutoff]);
 
   const handleOpenAdd = () => {
     setProductToEdit(null);
@@ -120,6 +146,7 @@ export default function InventoryView() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-slate-100 tracking-tight flex items-center gap-2">
@@ -127,7 +154,7 @@ export default function InventoryView() {
             Inventory & Stock Catalog
           </h1>
           <p className="text-xs text-slate-400 mt-1">
-            Manage your shop products, low-stock alerts, and perform instant inventory restocking
+            Manage product catalog, unit types, vertical attributes, and expiry date alerts
           </p>
         </div>
 
@@ -141,6 +168,7 @@ export default function InventoryView() {
         </div>
       </div>
 
+      {/* KPI Cards Banner */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
           <div className="flex items-center justify-between text-slate-400 text-xs font-semibold">
@@ -157,16 +185,16 @@ export default function InventoryView() {
             <AlertTriangle className="w-4 h-4 text-amber-400" />
           </div>
           <div className="text-2xl font-black text-amber-300 mt-2">{lowStockCount}</div>
-          <span className="text-[10px] text-amber-500">Below reorder threshold</span>
+          <span className="text-[10px] text-amber-500">Below threshold</span>
         </div>
 
         <div className="bg-slate-900 border border-rose-500/30 rounded-2xl p-4">
           <div className="flex items-center justify-between text-rose-400 text-xs font-semibold">
-            <span>Out of Stock</span>
-            <PackageX className="w-4 h-4 text-rose-400" />
+            <span>Expiring Soon</span>
+            <ShieldAlert className="w-4 h-4 text-rose-400" />
           </div>
-          <div className="text-2xl font-black text-rose-300 mt-2">{outOfStockCount}</div>
-          <span className="text-[10px] text-rose-500">Needs immediate restock</span>
+          <div className="text-2xl font-black text-rose-300 mt-2">{expiringCount}</div>
+          <span className="text-[10px] text-rose-500">Within {settings.expiry_alert_days || 30} days</span>
         </div>
 
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
@@ -177,10 +205,11 @@ export default function InventoryView() {
           <div className="text-xl font-black text-emerald-400 mt-2 truncate">
             {formatCurrency(totalValuationCents, settings.currency_symbol)}
           </div>
-          <span className="text-[10px] text-slate-500">Total retail value of stock</span>
+          <span className="text-[10px] text-slate-500">Total retail value</span>
         </div>
       </div>
 
+      {/* Filter & Search Toolbar */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-md">
         <div className="flex flex-col sm:flex-row items-center gap-3">
           <div className="relative flex-1 w-full">
@@ -189,24 +218,45 @@ export default function InventoryView() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search catalog by name or category..."
+              placeholder="Search by name, category, or batch number..."
               className="w-full bg-slate-950 border border-slate-700/80 rounded-xl py-2 pl-9 pr-4 text-xs text-slate-100 focus:outline-none focus:border-emerald-500"
             />
           </div>
 
-          <button
-            onClick={() => setFilterLowStockOnly(!filterLowStockOnly)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold transition-all ${
-              filterLowStockOnly
-                ? 'bg-amber-500/20 border-amber-500 text-amber-300'
-                : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <AlertTriangle className="w-3.5 h-3.5" />
-            Low Stock Alerts Only
-          </button>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <button
+              onClick={() => {
+                setFilterLowStockOnly(!filterLowStockOnly);
+                setFilterExpiringOnly(false);
+              }}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold transition-all ${
+                filterLowStockOnly
+                  ? 'bg-amber-500/20 border-amber-500 text-amber-300'
+                  : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <AlertTriangle className="w-3.5 h-3.5" />
+              Low Stock ({lowStockCount})
+            </button>
+
+            <button
+              onClick={() => {
+                setFilterExpiringOnly(!filterExpiringOnly);
+                setFilterLowStockOnly(false);
+              }}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold transition-all ${
+                filterExpiringOnly
+                  ? 'bg-rose-500/20 border-rose-500 text-rose-300'
+                  : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
+              Expiring Soon ({expiringCount})
+            </button>
+          </div>
         </div>
 
+        {/* Categories */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
           {categories.map((cat) => (
             <button
@@ -224,6 +274,7 @@ export default function InventoryView() {
         </div>
       </div>
 
+      {/* Table */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
@@ -233,7 +284,7 @@ export default function InventoryView() {
                 <th className="p-4">Category</th>
                 <th className="p-4">Selling Price</th>
                 <th className="p-4">Current Stock</th>
-                <th className="p-4">Alert Level</th>
+                <th className="p-4">Attributes / Expiry</th>
                 <th className="p-4 text-right">Actions</th>
               </tr>
             </thead>
@@ -254,6 +305,8 @@ export default function InventoryView() {
                 filteredProducts.map((p) => {
                   const isOut = p.stock_quantity <= 0;
                   const isLow = !isOut && p.stock_quantity <= p.low_stock_threshold;
+                  const expDate = p.attributes?.expiry_date ? new Date(p.attributes.expiry_date as string) : null;
+                  const isExpiring = expDate ? expDate.getTime() <= expiryCutoff : false;
 
                   return (
                     <tr
@@ -261,6 +314,8 @@ export default function InventoryView() {
                       className={`hover:bg-slate-800/40 transition-all ${
                         isOut
                           ? 'bg-rose-950/10'
+                          : isExpiring
+                          ? 'bg-rose-950/20'
                           : isLow
                           ? 'bg-amber-950/10'
                           : ''
@@ -291,26 +346,38 @@ export default function InventoryView() {
                       </td>
 
                       <td className="p-4">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1">
                           <span className="font-black text-sm text-white">
                             {p.stock_quantity}
                           </span>
-                          <span className="text-[10px] text-slate-400">units</span>
+                          <span className="text-[10px] font-semibold text-slate-400 uppercase">
+                            {p.unit_type || 'pcs'}
+                          </span>
                         </div>
                       </td>
 
-                      <td className="p-4">
-                        {isOut ? (
-                          <span className="px-2.5 py-1 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-300 text-[11px] font-bold flex items-center gap-1 w-max">
-                            <PackageX className="w-3 h-3 text-rose-400" /> Out of Stock
+                      <td className="p-4 space-y-1">
+                        {expDate && (
+                          <span
+                            className={`px-2 py-0.5 rounded-md text-[10px] font-bold inline-flex items-center gap-1 ${
+                              isExpiring
+                                ? 'bg-rose-500/20 border border-rose-500/40 text-rose-300'
+                                : 'bg-slate-950 border border-slate-800 text-slate-400'
+                            }`}
+                          >
+                            <Calendar className="w-3 h-3" /> Exp: {expDate.toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
                           </span>
-                        ) : isLow ? (
-                          <span className="px-2.5 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[11px] font-bold flex items-center gap-1 w-max">
-                            <AlertTriangle className="w-3 h-3 text-amber-400" /> Low (≤{p.low_stock_threshold})
+                        )}
+
+                        {p.attributes?.batch_no && (
+                          <span className="text-[10px] text-slate-400 block font-medium">
+                            Batch: {String(p.attributes.batch_no)}
                           </span>
-                        ) : (
-                          <span className="px-2.5 py-1 rounded-full bg-slate-800 text-slate-400 text-[11px] font-medium w-max block">
-                            Healthy (Threshold {p.low_stock_threshold})
+                        )}
+
+                        {isLow && !isExpiring && (
+                          <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold inline-block">
+                            Low Stock (≤{p.low_stock_threshold})
                           </span>
                         )}
                       </td>

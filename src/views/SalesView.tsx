@@ -14,6 +14,9 @@ export default function SalesView() {
     currency_symbol: '$',
     currency_code: 'USD',
     low_stock_alerts_enabled: true,
+    business_type: 'GENERAL_RETAIL',
+    expiry_alert_days: 30,
+    custom_attributes: [],
   });
   const [dateFilter, setDateFilter] = useState<'TODAY' | 'YESTERDAY' | 'THIS_WEEK' | 'ALL'>('TODAY');
   const [searchQuery, setSearchQuery] = useState('');

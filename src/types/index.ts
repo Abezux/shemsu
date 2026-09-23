@@ -5,16 +5,35 @@ export type ProductCategory =
   | 'Toiletries' 
   | 'Pharmacy' 
   | 'Stationery' 
-  | 'General';
+  | 'General'
+  | string;
+
+export type BusinessType = 
+  | 'MINI_SHOP' 
+  | 'PHARMACY' 
+  | 'RESTAURANT' 
+  | 'SALON' 
+  | 'GENERAL_RETAIL';
+
+export type UnitType = 'piece' | 'kg' | 'g' | 'L' | 'ml';
+
+export interface AttributeDefinition {
+  key: string;
+  label: string;
+  type: 'text' | 'number' | 'date' | 'boolean';
+}
 
 export interface Product {
   id: string;
   name: string;
-  category: ProductCategory | string;
+  category: ProductCategory;
   price: number; // integer in cents (e.g., 1500 = $15.00 or 1500 KSh)
   cost_price?: number; // integer in cents
   stock_quantity: number;
   low_stock_threshold: number;
+  unit_type?: UnitType; // default 'piece'
+  business_type?: BusinessType;
+  attributes?: Record<string, string | number | boolean>; // e.g. { expiry_date: "2026-10-15", batch_no: "B-902", prescription_required: false }
   barcode?: string;
   image_url?: string;
   created_at: string;
@@ -26,9 +45,10 @@ export interface SaleItem {
   sale_id: string;
   product_id: string;
   product_name: string;
-  quantity: number;
+  quantity: number; // integer or decimal for fractional units (e.g., 0.5 kg)
   unit_price: number; // cents snapshot
   line_total: number; // cents snapshot
+  unit_type?: UnitType;
 }
 
 export interface Sale {
@@ -69,18 +89,38 @@ export interface StoreSettings {
   currency_symbol: string;
   currency_code: string;
   low_stock_alerts_enabled: boolean;
+  business_type: BusinessType;
+  expiry_alert_days: number; // default: 30 days
+  custom_attributes?: AttributeDefinition[];
 }
 
-export interface DailyAnalytics {
-  date: string;
-  total_revenue: number;
-  total_sales_count: number;
-  total_items_sold: number;
-  low_stock_items_count: number;
-  top_products: {
-    product_id: string;
-    product_name: string;
-    units_sold: number;
-    total_revenue: number;
-  }[];
+export interface MetricTrend {
+  currentValue: number;
+  previousValue: number;
+  percentageChange: number; // e.g. +14.2 or -5.0
+  isIncrease: boolean;
+}
+
+export interface HourlySalesPoint {
+  hour: string; // e.g. "8 AM", "9 AM"
+  hourNum: number;
+  salesCount: number;
+  revenue: number; // in cents
+}
+
+export interface RevenueTrendPoint {
+  dateLabel: string;
+  timestamp: string;
+  currentPeriodRevenue: number; // in cents
+  previousPeriodRevenue: number; // in cents
+}
+
+export interface StockHealthItem {
+  product: Product;
+  currentStock: number;
+  threshold: number;
+  ratio: number; // 0 to 1
+  isLowStock: boolean;
+  isExpiringSoon: boolean;
+  daysUntilExpiry?: number;
 }

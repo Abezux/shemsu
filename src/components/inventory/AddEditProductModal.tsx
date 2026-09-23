@@ -1,9 +1,8 @@
-'use client';
-
 import React, { useState, useEffect } from 'react';
-import { Product, ProductCategory } from '@/types';
+import { Product, ProductCategory, UnitType, BusinessType, StoreSettings } from '@/types';
 import { parseInputToCents, centsToDecimalString } from '@/utils/currency';
-import { X, Package, Tag, DollarSign, Layers, AlertCircle } from 'lucide-react';
+import { api } from '@/services/api';
+import { X, Package, Layers, Calendar, FileText, Clock, AlertCircle } from 'lucide-react';
 
 interface AddEditProductModalProps {
   isOpen: boolean;
@@ -23,7 +22,15 @@ const CATEGORIES: ProductCategory[] = [
   'General',
 ];
 
-const EMOJI_ICONS = ['🥤', '💧', '🧃', '🥔', '🍫', '🍞', '🥛', '🧼', '🪥', '💊', '🧴', '🖊️', '📓', '📦', '🍎', '🍌'];
+const UNIT_TYPES: { id: UnitType; label: string }[] = [
+  { id: 'piece', label: 'Pieces (pcs)' },
+  { id: 'kg', label: 'Kilograms (kg)' },
+  { id: 'g', label: 'Grams (g)' },
+  { id: 'L', label: 'Liters (L)' },
+  { id: 'ml', label: 'Milliliters (ml)' },
+];
+
+const EMOJI_ICONS = ['🥤', '💧', '🧃', '🥔', '🍫', '🍞', '🌾', '🥛', '🧼', '🪥', '💊', '🧴', '🖊️', '📓', '📦', '🍎', '🍌', '🍔', '✂️'];
 
 export default function AddEditProductModal({
   isOpen,
@@ -38,11 +45,16 @@ export default function AddEditProductModal({
   const [costPriceInput, setCostPriceInput] = useState('');
   const [stockQuantity, setStockQuantity] = useState<number>(10);
   const [lowStockThreshold, setLowStockThreshold] = useState<number>(5);
+  const [unitType, setUnitType] = useState<UnitType>('piece');
   const [imageUrl, setImageUrl] = useState<string>('📦');
+  const [attributes, setAttributes] = useState<Record<string, any>>({});
+  const [settings, setSettings] = useState<StoreSettings | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
+      api.getSettings().then(setSettings).catch(() => {});
+
       if (productToEdit) {
         setName(productToEdit.name);
         setCategory(productToEdit.category);
@@ -50,7 +62,9 @@ export default function AddEditProductModal({
         setCostPriceInput(productToEdit.cost_price ? centsToDecimalString(productToEdit.cost_price) : '');
         setStockQuantity(productToEdit.stock_quantity);
         setLowStockThreshold(productToEdit.low_stock_threshold);
+        setUnitType(productToEdit.unit_type || 'piece');
         setImageUrl(productToEdit.image_url || '📦');
+        setAttributes(productToEdit.attributes || {});
       } else {
         setName('');
         setCategory('Beverages');
@@ -58,13 +72,19 @@ export default function AddEditProductModal({
         setCostPriceInput('');
         setStockQuantity(10);
         setLowStockThreshold(5);
+        setUnitType('piece');
         setImageUrl('📦');
+        setAttributes({});
       }
       setIsSubmitting(false);
     }
   }, [isOpen, productToEdit]);
 
   if (!isOpen) return null;
+
+  const handleAttrChange = (key: string, value: any) => {
+    setAttributes((prev) => ({ ...prev, [key]: value }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,6 +108,8 @@ export default function AddEditProductModal({
         cost_price: costPriceInput ? parseInputToCents(costPriceInput) : undefined,
         stock_quantity: stockQuantity,
         low_stock_threshold: lowStockThreshold,
+        unit_type: unitType,
+        attributes,
         image_url: imageUrl,
       });
       onClose();
@@ -97,6 +119,8 @@ export default function AddEditProductModal({
       setIsSubmitting(false);
     }
   };
+
+  const businessType = settings?.business_type || 'GENERAL_RETAIL';
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
@@ -121,7 +145,6 @@ export default function AddEditProductModal({
           <div className="space-y-1">
             <label className="text-xs font-semibold text-slate-300">Product Name</label>
             <div className="flex gap-2">
-              {/* Emoji selector dropdown */}
               <select
                 value={imageUrl}
                 onChange={(e) => setImageUrl(e.target.value)}
@@ -138,26 +161,43 @@ export default function AddEditProductModal({
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Coca Cola 500ml or Panadol Extra"
+                placeholder="e.g. Paracetamol 500mg or Coca Cola"
                 className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white font-medium focus:outline-none focus:border-emerald-500"
               />
             </div>
           </div>
 
-          {/* Category */}
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-300">Category</label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white font-medium focus:outline-none focus:border-emerald-500"
-            >
-              {CATEGORIES.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
+          {/* Category & Unit Type */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-slate-300">Category</label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-medium focus:outline-none focus:border-emerald-500"
+              >
+                {CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-slate-300">Unit of Sale</label>
+              <select
+                value={unitType}
+                onChange={(e) => setUnitType(e.target.value as UnitType)}
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-medium focus:outline-none focus:border-emerald-500"
+              >
+                {UNIT_TYPES.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Pricing Grid */}
@@ -196,21 +236,22 @@ export default function AddEditProductModal({
           <div className="grid grid-cols-2 gap-3 bg-slate-950/60 p-4 rounded-2xl border border-slate-800">
             <div className="space-y-1">
               <label className="text-xs font-semibold text-slate-300">
-                Initial / Current Stock
+                Current Stock ({unitType})
               </label>
               <input
                 type="number"
                 min="0"
+                step={unitType === 'piece' ? '1' : '0.01'}
                 required
                 value={stockQuantity}
-                onChange={(e) => setStockQuantity(parseInt(e.target.value) || 0)}
+                onChange={(e) => setStockQuantity(parseFloat(e.target.value) || 0)}
                 className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white font-bold focus:outline-none focus:border-emerald-500"
               />
             </div>
 
             <div className="space-y-1">
               <label className="text-xs font-semibold text-amber-400 flex items-center gap-1">
-                <AlertCircle className="w-3.5 h-3.5" /> Low Stock Alert
+                <AlertCircle className="w-3.5 h-3.5" /> Alert Level
               </label>
               <input
                 type="number"
@@ -220,8 +261,99 @@ export default function AddEditProductModal({
                 onChange={(e) => setLowStockThreshold(parseInt(e.target.value) || 1)}
                 className="w-full bg-slate-900 border border-amber-500/40 rounded-xl px-3 py-2 text-sm text-amber-300 font-bold focus:outline-none focus:border-amber-400"
               />
-              <span className="text-[10px] text-slate-500 block">Alert when stock ≤ threshold</span>
             </div>
+          </div>
+
+          {/* Business Vertical Specific Dynamic Attributes */}
+          <div className="bg-slate-950/40 p-4 rounded-2xl border border-slate-800 space-y-3">
+            <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider block">
+              Vertical Attributes ({businessType.replace('_', ' ')})
+            </span>
+
+            {/* Pharmacy Specific Fields */}
+            {businessType === 'PHARMACY' && (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300">Expiry Date</label>
+                    <input
+                      type="date"
+                      value={attributes.expiry_date || ''}
+                      onChange={(e) => handleAttrChange('expiry_date', e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300">Batch Number</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. BCH-901"
+                      value={attributes.batch_no || ''}
+                      onChange={(e) => handleAttrChange('batch_no', e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-white"
+                    />
+                  </div>
+                </div>
+
+                <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer pt-1">
+                  <input
+                    type="checkbox"
+                    checked={!!attributes.prescription_required}
+                    onChange={(e) => handleAttrChange('prescription_required', e.target.checked)}
+                    className="rounded bg-slate-900 border-slate-700 text-emerald-500 focus:ring-emerald-500"
+                  />
+                  <span>Requires Prescription (Rx)</span>
+                </label>
+              </div>
+            )}
+
+            {/* Restaurant Specific Fields */}
+            {businessType === 'RESTAURANT' && (
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-300">Prep Time (mins)</label>
+                  <input
+                    type="number"
+                    placeholder="15"
+                    value={attributes.prep_time_mins || ''}
+                    onChange={(e) => handleAttrChange('prep_time_mins', parseInt(e.target.value) || '')}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-300">Allergens</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Nuts, Dairy"
+                    value={attributes.allergens || ''}
+                    onChange={(e) => handleAttrChange('allergens', e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-white"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Custom Attributes Defined by User */}
+            {settings?.custom_attributes && settings.custom_attributes.length > 0 && (
+              <div className="space-y-2 pt-2 border-t border-slate-800">
+                <span className="text-[11px] font-semibold text-slate-400 block">Custom Defined Fields</span>
+                <div className="grid grid-cols-2 gap-2">
+                  {settings.custom_attributes.map((attr) => (
+                    <div key={attr.key}>
+                      <label className="text-[11px] font-semibold text-slate-300">{attr.label}</label>
+                      <input
+                        type={attr.type === 'number' ? 'number' : attr.type === 'date' ? 'date' : 'text'}
+                        value={attributes[attr.key] || ''}
+                        onChange={(e) => handleAttrChange(attr.key, e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-white"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Buttons */}

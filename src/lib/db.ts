@@ -44,6 +44,9 @@ function ensureDataFile(): StoreData {
         currency_symbol: '$',
         currency_code: 'USD',
         low_stock_alerts_enabled: true,
+        business_type: 'GENERAL_RETAIL',
+        expiry_alert_days: 30,
+        custom_attributes: [],
       },
     };
 
@@ -65,6 +68,9 @@ function ensureDataFile(): StoreData {
         currency_symbol: '$',
         currency_code: 'USD',
         low_stock_alerts_enabled: true,
+        business_type: 'GENERAL_RETAIL',
+        expiry_alert_days: 30,
+        custom_attributes: [],
       },
     };
   }
@@ -77,7 +83,6 @@ function saveStoreData(data: StoreData) {
   fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
 }
 
-// Data access operations
 export const db = {
   getProducts: (): Product[] => {
     return ensureDataFile().products;
@@ -92,7 +97,6 @@ export const db = {
     const now = new Date().toISOString();
     
     if (productData.id) {
-      // Update existing
       const index = data.products.findIndex((p) => p.id === productData.id);
       if (index !== -1) {
         const oldProduct = data.products[index];
@@ -105,7 +109,6 @@ export const db = {
         };
         data.products[index] = updatedProduct;
 
-        // Log manual stock adjustment if changed directly
         if (stockDiff !== 0) {
           data.stock_movements.unshift({
             id: `sm-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
@@ -124,7 +127,6 @@ export const db = {
       }
     }
 
-    // Create new
     const newProduct: Product = {
       id: `prod-${Date.now()}`,
       name: productData.name,
@@ -133,6 +135,9 @@ export const db = {
       cost_price: productData.cost_price,
       stock_quantity: productData.stock_quantity,
       low_stock_threshold: productData.low_stock_threshold ?? 5,
+      unit_type: productData.unit_type || 'piece',
+      business_type: productData.business_type,
+      attributes: productData.attributes || {},
       image_url: productData.image_url || '📦',
       created_at: now,
       updated_at: now,
@@ -211,15 +216,13 @@ export const db = {
       const product = data.products.find((p) => p.id === itemReq.product_id);
       if (!product) continue;
 
-      const lineTotal = product.price * itemReq.quantity;
+      const lineTotal = Math.round(product.price * itemReq.quantity);
       totalAmount += lineTotal;
       totalItemsCount += itemReq.quantity;
 
-      // 1. Deduct stock immediately
       product.stock_quantity = Math.max(0, product.stock_quantity - itemReq.quantity);
       product.updated_at = now;
 
-      // 2. Add SaleItem record
       const saleItem: SaleItem = {
         id: `si-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
         sale_id: saleId,
@@ -228,10 +231,10 @@ export const db = {
         quantity: itemReq.quantity,
         unit_price: product.price,
         line_total: lineTotal,
+        unit_type: product.unit_type || 'piece',
       };
       saleItems.push(saleItem);
 
-      // 3. Log Stock Movement audit record
       data.stock_movements.unshift({
         id: `sm-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
         product_id: product.id,
@@ -272,7 +275,6 @@ export const db = {
     sale.void_reason = voidReason;
     sale.voided_at = now;
 
-    // Restore stock for every item in the voided sale
     if (sale.items) {
       for (const item of sale.items) {
         const product = data.products.find((p) => p.id === item.product_id);
