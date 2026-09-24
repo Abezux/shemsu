@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
+import { AuthProvider, useAuth } from '@/context/AuthContext';
+import AuthView from '@/views/AuthView';
+import OnboardingView from '@/views/OnboardingView';
 import Navbar from '@/components/navigation/Navbar';
 import SellPage from '@/views/SellView';
 import InventoryPage from '@/views/InventoryView';
 import SalesHistoryPage from '@/views/SalesView';
 import AuditPage from '@/views/AuditView';
 import AnalyticsPage from '@/views/AnalyticsView';
+import { Loader2 } from 'lucide-react';
 
-export default function App() {
+function AppContent() {
+  const { user, store, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('sell');
 
   useEffect(() => {
@@ -28,6 +33,25 @@ export default function App() {
     window.location.hash = tab;
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#090d16] text-slate-100 flex flex-col items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-10 h-10 text-emerald-400 animate-spin" />
+          <span className="text-sm font-semibold text-slate-400">Loading Shemsu POS...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthView />;
+  }
+
+  if (!store) {
+    return <OnboardingView />;
+  }
+
   return (
     <div className="bg-[#090d16] text-slate-100 min-h-screen flex flex-col pb-16 md:pb-0">
       <Navbar activeTab={activeTab} onNavigate={navigateTo} />
@@ -41,3 +65,12 @@ export default function App() {
     </div>
   );
 }
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
+}
+

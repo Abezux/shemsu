@@ -8,10 +8,13 @@ import {
   Store, 
   Sparkles,
   Wifi,
-  Settings
+  Settings,
+  LogOut,
+  User
 } from 'lucide-react';
 import { api } from '@/services/api';
 import { StoreSettings } from '@/types';
+import { useAuth } from '@/context/AuthContext';
 import SettingsModal from '@/components/settings/SettingsModal';
 
 interface NavbarProps {
@@ -28,13 +31,14 @@ const BUSINESS_TYPE_BADGES: Record<string, { label: string; icon: string }> = {
 };
 
 export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
+  const { user, store, signOut, refreshStore } = useAuth();
   const [settings, setSettings] = useState<StoreSettings>({
-    store_name: 'Shemsu Kiosk POS',
-    currency_symbol: '$',
-    currency_code: 'USD',
+    store_name: store?.store_name || 'Shemsu Kiosk POS',
+    currency_symbol: store?.currency_symbol || '$',
+    currency_code: store?.currency_code || 'USD',
     low_stock_alerts_enabled: true,
-    business_type: 'GENERAL_RETAIL',
-    expiry_alert_days: 30,
+    business_type: store?.business_type || 'GENERAL_RETAIL',
+    expiry_alert_days: store?.expiry_alert_days || 30,
     custom_attributes: [],
   });
   const [isSeeding, setIsSeeding] = useState<boolean>(false);
@@ -45,8 +49,20 @@ export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
   };
 
   useEffect(() => {
-    loadSettings();
-  }, []);
+    if (store) {
+      setSettings({
+        store_name: store.store_name,
+        currency_symbol: store.currency_symbol,
+        currency_code: store.currency_code,
+        low_stock_alerts_enabled: true,
+        business_type: store.business_type,
+        expiry_alert_days: store.expiry_alert_days,
+        custom_attributes: store.custom_attributes || [],
+      });
+    } else {
+      loadSettings();
+    }
+  }, [store]);
 
   const handleSeed = async () => {
     if (confirm('Load pre-populated demo kiosk catalog (drinks, snacks, groceries, medicines)? This will refresh catalog.')) {
@@ -64,6 +80,7 @@ export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
 
   const handleSaveSettings = async (newSettings: StoreSettings) => {
     await api.updateSettings(newSettings);
+    await refreshStore();
     loadSettings();
     window.location.reload();
   };
@@ -97,8 +114,17 @@ export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
               <div className="flex items-center gap-3 text-xs text-slate-400">
                 <span className="flex items-center gap-1 text-emerald-400">
                   <Wifi className="w-3 h-3 text-emerald-400" />
-                  <span>Ready</span>
+                  <span>Cloud Active</span>
                 </span>
+                {user?.email && (
+                  <>
+                    <span>•</span>
+                    <span className="flex items-center gap-1 text-slate-300">
+                      <User className="w-3 h-3 text-slate-400" />
+                      <span className="truncate max-w-[140px] sm:max-w-none">{user.email}</span>
+                    </span>
+                  </>
+                )}
                 <span>•</span>
                 <span>Currency: <strong className="text-white">{settings.currency_symbol} ({settings.currency_code})</strong></span>
               </div>
@@ -113,8 +139,8 @@ export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
               title="Load demo kiosk products"
             >
               <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="hidden sm:inline">{isSeeding ? 'Seeding...' : 'Load Kiosk Demo Catalog'}</span>
-              <span className="sm:hidden">Demo Catalog</span>
+              <span className="hidden sm:inline">{isSeeding ? 'Seeding...' : 'Load Demo Catalog'}</span>
+              <span className="sm:hidden">Demo</span>
             </button>
 
             <button
@@ -123,6 +149,14 @@ export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
               title="Store settings & Business Vertical"
             >
               <Settings className="w-4 h-4 text-emerald-400" />
+            </button>
+
+            <button
+              onClick={() => signOut()}
+              className="p-2 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 transition-all"
+              title="Sign Out of Shemsu"
+            >
+              <LogOut className="w-4 h-4 text-rose-400" />
             </button>
           </div>
         </div>

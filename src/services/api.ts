@@ -4,13 +4,13 @@ import {
   SaleItem, 
   StockMovement, 
   StoreSettings, 
-  BusinessType, 
   MetricTrend, 
   HourlySalesPoint, 
   RevenueTrendPoint, 
   StockHealthItem 
 } from '@/types';
 import { INITIAL_SAMPLE_PRODUCTS } from '@/lib/seed';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 const PRODUCTS_KEY = 'shemsu_products_v1';
 const SALES_KEY = 'shemsu_sales_v1';
@@ -33,79 +33,134 @@ function setLocal<T>(key: string, val: T): void {
   localStorage.setItem(key, JSON.stringify(val));
 }
 
-function migrateAndInitData() {
-  const products = getLocal<Product[]>(PRODUCTS_KEY, []);
-  const settings = getLocal<Partial<StoreSettings>>(SETTINGS_KEY, {});
+// Helper to get active store ID
+const getActiveStoreId = async (): Promise<string | null> => {
+  if (!isSupabaseConfigured()) return null;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
 
-  // Migrate Settings
-  let updatedSettings = false;
-  if (!settings.business_type) {
-    settings.business_type = 'GENERAL_RETAIL';
-    updatedSettings = true;
-  }
-  if (settings.expiry_alert_days === undefined) {
-    settings.expiry_alert_days = 30;
-    updatedSettings = true;
-  }
-  if (!settings.store_name) {
-    settings.store_name = 'Corner Mini-Market & Kiosk';
-    settings.currency_symbol = '$';
-    settings.currency_code = 'USD';
-    settings.low_stock_alerts_enabled = true;
-    updatedSettings = true;
-  }
+  const { data } = await supabase
+    .from('stores')
+    .select('id')
+    .eq('owner_user_id', user.id)
+    .maybeSingle();
 
-  if (updatedSettings) {
-    setLocal(SETTINGS_KEY, settings);
-  }
-
-  // Migrate Products
-  if (products.length === 0) {
-    const defaultProducts: Product[] = INITIAL_SAMPLE_PRODUCTS.map((p, idx) => ({
-      ...p,
-      id: `prod-${idx + 1}`,
-      created_at: new Date(Date.now() - idx * 3600000).toISOString(),
-      updated_at: new Date().toISOString(),
-    }));
-
-    const initialMovements: StockMovement[] = defaultProducts.map((p) => ({
-      id: `sm-init-${p.id}`,
-      product_id: p.id,
-      product_name: p.name,
-      change_amount: p.stock_quantity,
-      quantity_after: p.stock_quantity,
-      reason: 'RESTOCK',
-      note: 'Initial catalog setup',
-      timestamp: p.created_at,
-    }));
-
-    setLocal(PRODUCTS_KEY, defaultProducts);
-    setLocal(MOVEMENTS_KEY, initialMovements);
-  } else {
-    // Migration check for existing products missing unit_type
-    let productMigrated = false;
-    products.forEach((p) => {
-      if (!p.unit_type) {
-        p.unit_type = 'piece';
-        productMigrated = true;
-      }
-    });
-    if (productMigrated) {
-      setLocal(PRODUCTS_KEY, products);
-    }
-  }
-}
+  return data?.id || null;
+};
 
 export const api = {
   getProducts: async (): Promise<Product[]> => {
-    migrateAndInitData();
+    if (isSupabaseConfigured()) {
+      const storeId = await getActiveStoreId();
+      if (!storeId) return getLocal<Product[]>(PRODUCTS_KEY, []);
+
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('store_id', storeId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Supabase error fetching products:', error);
+        return getLocal<Product[]>(PRODUCTS_KEY, []);
+      }
+      return (data || []) as Product[];
+    }
+
     return getLocal<Product[]>(PRODUCTS_KEY, []);
   },
 
   saveProduct: async (
     productData: Partial<Product> & { name: string; price: number; stock_quantity: number }
   ): Promise<Product> => {
-    migrateAndInitData();
+    if (isSupabaseConfigured()) {
+      const storeId = await getActiveStoreId();
+      if (storeId) {
+        const now = new Date().toISOString();
+        let savedProd: Product;
+
+        if (productData.id) {
+          // Fetch existing product for stock diff calculation
+          const { data: oldProd } = await supabase
+            .from('products')
+            .select('stock_quantity')
+            .eq('id', productData.id)
+            .single();
+
+          const diff = oldProd ? productData.stock_quantity - oldProd.stock_quantity : 0;
+
+          const { data, error } = await supabase
+            .from('products')
+            .update({
+              name: productData.name.trim(),
+              category: productData.category || 'General',
+              price: productData.price,
+              cost_price: productData.cost_price,
+              stock_quantity: productData.stock_quantity,
+              low_stock_threshold: productData.low_stock_threshold ?? 5,
+              unit_type: productData.unit_type || 'piece',
+              attributes: productData.attributes || {},
+              image_url: productData.image_url || '📦',
+              updated_at: now,
+            })
+            .eq('id', productData.id)
+            .select('*')
+            .single();
+
+          if (error) throw new Error(error.message);
+          savedProd = data as Product;
+
+          if (diff !== 0) {
+            await supabase.from('stock_movements').insert({
+              store_id: storeId,
+              product_id: savedProd.id,
+              product_name: savedProd.name,
+              change_amount: diff,
+              quantity_after: savedProd.stock_quantity,
+              reason: 'MANUAL_ADJUSTMENT',
+              note: 'Product stock updated in catalog',
+              timestamp: now,
+            });
+          }
+        } else {
+          // Insert new product
+          const { data, error } = await supabase
+            .from('products')
+            .insert({
+              store_id: storeId,
+              name: productData.name.trim(),
+              category: productData.category || 'General',
+              price: productData.price,
+              cost_price: productData.cost_price,
+              stock_quantity: productData.stock_quantity,
+              low_stock_threshold: productData.low_stock_threshold ?? 5,
+              unit_type: productData.unit_type || 'piece',
+              attributes: productData.attributes || {},
+              image_url: productData.image_url || '📦',
+            })
+            .select('*')
+            .single();
+
+          if (error) throw new Error(error.message);
+          savedProd = data as Product;
+
+          await supabase.from('stock_movements').insert({
+            store_id: storeId,
+            product_id: savedProd.id,
+            product_name: savedProd.name,
+            change_amount: savedProd.stock_quantity,
+            quantity_after: savedProd.stock_quantity,
+            reason: 'RESTOCK',
+            note: 'Initial catalog item creation',
+            timestamp: now,
+          });
+        }
+
+        return savedProd;
+      }
+    }
+
+    // Local Storage Fallback
     const products = getLocal<Product[]>(PRODUCTS_KEY, []);
     const movements = getLocal<StockMovement[]>(MOVEMENTS_KEY, []);
     const now = new Date().toISOString();
@@ -146,7 +201,6 @@ export const api = {
       stock_quantity: productData.stock_quantity,
       low_stock_threshold: productData.low_stock_threshold ?? 5,
       unit_type: productData.unit_type || 'piece',
-      business_type: productData.business_type,
       attributes: productData.attributes || {},
       image_url: productData.image_url || '📦',
       created_at: now,
@@ -171,6 +225,14 @@ export const api = {
   },
 
   deleteProduct: async (id: string): Promise<boolean> => {
+    if (isSupabaseConfigured()) {
+      const storeId = await getActiveStoreId();
+      if (storeId) {
+        const { error } = await supabase.from('products').delete().eq('id', id).eq('store_id', storeId);
+        return !error;
+      }
+    }
+
     const products = getLocal<Product[]>(PRODUCTS_KEY, []);
     const filtered = products.filter((p) => p.id !== id);
     setLocal(PRODUCTS_KEY, filtered);
@@ -178,6 +240,44 @@ export const api = {
   },
 
   restockProduct: async (id: string, addQuantity: number, note?: string): Promise<Product> => {
+    if (isSupabaseConfigured()) {
+      const storeId = await getActiveStoreId();
+      if (storeId) {
+        const { data: prod, error: getErr } = await supabase
+          .from('products')
+          .select('*')
+          .eq('id', id)
+          .single();
+
+        if (getErr || !prod) throw new Error('Product not found');
+
+        const newStock = Number(prod.stock_quantity) + addQuantity;
+        const now = new Date().toISOString();
+
+        const { data: updatedProd, error: updateErr } = await supabase
+          .from('products')
+          .update({ stock_quantity: newStock, updated_at: now })
+          .eq('id', id)
+          .select('*')
+          .single();
+
+        if (updateErr) throw new Error(updateErr.message);
+
+        await supabase.from('stock_movements').insert({
+          store_id: storeId,
+          product_id: id,
+          product_name: prod.name,
+          change_amount: addQuantity,
+          quantity_after: newStock,
+          reason: 'RESTOCK',
+          note: note || `Restocked +${addQuantity} units`,
+          timestamp: now,
+        });
+
+        return updatedProd as Product;
+      }
+    }
+
     const products = getLocal<Product[]>(PRODUCTS_KEY, []);
     const movements = getLocal<StockMovement[]>(MOVEMENTS_KEY, []);
     const product = products.find((p) => p.id === id);
@@ -205,6 +305,27 @@ export const api = {
   },
 
   getSales: async (): Promise<Sale[]> => {
+    if (isSupabaseConfigured()) {
+      const storeId = await getActiveStoreId();
+      if (!storeId) return getLocal<Sale[]>(SALES_KEY, []);
+
+      const { data: salesData, error } = await supabase
+        .from('sales')
+        .select('*, sale_items(*)')
+        .eq('store_id', storeId)
+        .order('timestamp', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching sales from Supabase:', error);
+        return getLocal<Sale[]>(SALES_KEY, []);
+      }
+
+      return (salesData || []).map((s: any) => ({
+        ...s,
+        items: s.sale_items || [],
+      })) as Sale[];
+    }
+
     return getLocal<Sale[]>(SALES_KEY, []);
   },
 
@@ -213,6 +334,96 @@ export const api = {
     paymentMethod: Sale['payment_method'] = 'CASH',
     notes?: string
   ): Promise<Sale> => {
+    if (isSupabaseConfigured()) {
+      const storeId = await getActiveStoreId();
+      if (storeId) {
+        const now = new Date().toISOString();
+        const saleNumber = `#INV-${Date.now().toString().slice(-6)}`;
+
+        // Fetch products involved
+        const prodIds = items.map((i) => i.product_id);
+        const { data: prods } = await supabase.from('products').select('*').in('id', prodIds);
+
+        const productsMap = new Map((prods || []).map((p: any) => [p.id, p]));
+
+        let totalAmount = 0;
+        let totalItemsCount = 0;
+        const saleItemsToInsert: any[] = [];
+        const stockMovementsToInsert: any[] = [];
+        const productUpdates: { id: string; newStock: number }[] = [];
+
+        for (const itemReq of items) {
+          const product = productsMap.get(itemReq.product_id);
+          if (!product) continue;
+
+          const lineTotal = Math.round(product.price * itemReq.quantity);
+          totalAmount += lineTotal;
+          totalItemsCount += itemReq.quantity;
+
+          const newStock = Math.max(0, Number(product.stock_quantity) - itemReq.quantity);
+          productUpdates.push({ id: product.id, newStock });
+
+          saleItemsToInsert.push({
+            store_id: storeId,
+            product_id: product.id,
+            product_name: product.name,
+            quantity: itemReq.quantity,
+            unit_price: product.price,
+            line_total: lineTotal,
+            unit_type: product.unit_type || 'piece',
+          });
+
+          stockMovementsToInsert.push({
+            store_id: storeId,
+            product_id: product.id,
+            product_name: product.name,
+            change_amount: -itemReq.quantity,
+            quantity_after: newStock,
+            reason: 'SALE',
+            note: `Sold via sale ${saleNumber}`,
+            timestamp: now,
+          });
+        }
+
+        // 1. Insert Sale record
+        const { data: saleData, error: saleErr } = await supabase
+          .from('sales')
+          .insert({
+            store_id: storeId,
+            sale_number: saleNumber,
+            timestamp: now,
+            total_amount: totalAmount,
+            items_count: totalItemsCount,
+            status: 'COMPLETED',
+            payment_method: paymentMethod,
+            notes,
+          })
+          .select('*')
+          .single();
+
+        if (saleErr) throw new Error(saleErr.message);
+
+        // 2. Insert Sale Items
+        const itemsWithSaleId = saleItemsToInsert.map((item) => ({ ...item, sale_id: saleData.id }));
+        await supabase.from('sale_items').insert(itemsWithSaleId);
+
+        // 3. Update product stock levels
+        for (const update of productUpdates) {
+          await supabase.from('products').update({ stock_quantity: update.newStock, updated_at: now }).eq('id', update.id);
+        }
+
+        // 4. Insert Stock Movements
+        const movementsWithRef = stockMovementsToInsert.map((m) => ({ ...m, reference_id: saleData.id }));
+        await supabase.from('stock_movements').insert(movementsWithRef);
+
+        return {
+          ...saleData,
+          items: itemsWithSaleId,
+        } as Sale;
+      }
+    }
+
+    // Local Storage Fallback
     const products = getLocal<Product[]>(PRODUCTS_KEY, []);
     const sales = getLocal<Sale[]>(SALES_KEY, []);
     const movements = getLocal<StockMovement[]>(MOVEMENTS_KEY, []);
@@ -233,7 +444,6 @@ export const api = {
       totalAmount += lineTotal;
       totalItemsCount += itemReq.quantity;
 
-      // Deduct stock
       product.stock_quantity = Math.max(0, product.stock_quantity - itemReq.quantity);
       product.updated_at = now;
 
@@ -283,6 +493,61 @@ export const api = {
   },
 
   voidSale: async (saleId: string, reason: string): Promise<Sale> => {
+    if (isSupabaseConfigured()) {
+      const storeId = await getActiveStoreId();
+      if (storeId) {
+        const now = new Date().toISOString();
+
+        // 1. Fetch sale with items
+        const { data: sale, error: getErr } = await supabase
+          .from('sales')
+          .select('*, sale_items(*)')
+          .eq('id', saleId)
+          .single();
+
+        if (getErr || !sale || sale.status === 'VOIDED') throw new Error('Sale not found or already voided');
+
+        // 2. Mark sale VOIDED
+        const { data: voidedSale, error: voidErr } = await supabase
+          .from('sales')
+          .update({
+            status: 'VOIDED',
+            void_reason: reason,
+            voided_at: now,
+          })
+          .eq('id', saleId)
+          .select('*')
+          .single();
+
+        if (voidErr) throw new Error(voidErr.message);
+
+        // 3. Restore product stock & log movements
+        if (sale.sale_items) {
+          for (const item of sale.sale_items) {
+            const { data: prod } = await supabase.from('products').select('stock_quantity').eq('id', item.product_id).single();
+            if (prod) {
+              const restoredStock = Number(prod.stock_quantity) + Number(item.quantity);
+              await supabase.from('products').update({ stock_quantity: restoredStock, updated_at: now }).eq('id', item.product_id);
+
+              await supabase.from('stock_movements').insert({
+                store_id: storeId,
+                product_id: item.product_id,
+                product_name: item.product_name,
+                change_amount: item.quantity,
+                quantity_after: restoredStock,
+                reason: 'VOID_SALE',
+                reference_id: saleId,
+                note: `Voided sale ${sale.sale_number}: ${reason}`,
+                timestamp: now,
+              });
+            }
+          }
+        }
+
+        return voidedSale as Sale;
+      }
+    }
+
     const products = getLocal<Product[]>(PRODUCTS_KEY, []);
     const sales = getLocal<Sale[]>(SALES_KEY, []);
     const movements = getLocal<StockMovement[]>(MOVEMENTS_KEY, []);
@@ -325,11 +590,49 @@ export const api = {
   },
 
   getStockMovements: async (): Promise<StockMovement[]> => {
+    if (isSupabaseConfigured()) {
+      const storeId = await getActiveStoreId();
+      if (!storeId) return getLocal<StockMovement[]>(MOVEMENTS_KEY, []);
+
+      const { data, error } = await supabase
+        .from('stock_movements')
+        .select('*')
+        .eq('store_id', storeId)
+        .order('timestamp', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching stock movements:', error);
+        return getLocal<StockMovement[]>(MOVEMENTS_KEY, []);
+      }
+      return (data || []) as StockMovement[];
+    }
+
     return getLocal<StockMovement[]>(MOVEMENTS_KEY, []);
   },
 
   getSettings: async (): Promise<StoreSettings> => {
-    migrateAndInitData();
+    if (isSupabaseConfigured()) {
+      const storeId = await getActiveStoreId();
+      if (storeId) {
+        const { data, error } = await supabase
+          .from('stores')
+          .select('*')
+          .eq('id', storeId)
+          .single();
+
+        if (!error && data) {
+          return {
+            store_name: data.name,
+            currency_symbol: data.currency_symbol,
+            currency_code: data.currency_code,
+            business_type: data.business_type,
+            expiry_alert_days: data.expiry_alert_days,
+            low_stock_alerts_enabled: true,
+          };
+        }
+      }
+    }
+
     return getLocal<StoreSettings>(SETTINGS_KEY, {
       store_name: 'Corner Mini-Market & Kiosk',
       currency_symbol: '$',
@@ -342,6 +645,36 @@ export const api = {
   },
 
   updateSettings: async (settings: Partial<StoreSettings>): Promise<StoreSettings> => {
+    if (isSupabaseConfigured()) {
+      const storeId = await getActiveStoreId();
+      if (storeId) {
+        const { data, error } = await supabase
+          .from('stores')
+          .update({
+            name: settings.store_name,
+            business_type: settings.business_type,
+            currency_symbol: settings.currency_symbol,
+            currency_code: settings.currency_code,
+            expiry_alert_days: settings.expiry_alert_days,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', storeId)
+          .select('*')
+          .single();
+
+        if (!error && data) {
+          return {
+            store_name: data.name,
+            currency_symbol: data.currency_symbol,
+            currency_code: data.currency_code,
+            business_type: data.business_type,
+            expiry_alert_days: data.expiry_alert_days,
+            low_stock_alerts_enabled: true,
+          };
+        }
+      }
+    }
+
     const current = await api.getSettings();
     const updated = { ...current, ...settings };
     setLocal(SETTINGS_KEY, updated);
@@ -349,6 +682,46 @@ export const api = {
   },
 
   seedDemo: async (): Promise<Product[]> => {
+    if (isSupabaseConfigured()) {
+      const storeId = await getActiveStoreId();
+      if (storeId) {
+        const now = new Date().toISOString();
+        const demoProductsToInsert = INITIAL_SAMPLE_PRODUCTS.map((p) => ({
+          store_id: storeId,
+          name: p.name,
+          category: p.category,
+          price: p.price,
+          cost_price: p.cost_price,
+          stock_quantity: p.stock_quantity,
+          low_stock_threshold: p.low_stock_threshold,
+          unit_type: p.unit_type || 'piece',
+          attributes: p.attributes || {},
+          image_url: p.image_url || '📦',
+        }));
+
+        const { data: insertedProds, error } = await supabase
+          .from('products')
+          .insert(demoProductsToInsert)
+          .select('*');
+
+        if (error) throw new Error(error.message);
+
+        const movementsToInsert = (insertedProds || []).map((p: any) => ({
+          store_id: storeId,
+          product_id: p.id,
+          product_name: p.name,
+          change_amount: p.stock_quantity,
+          quantity_after: p.stock_quantity,
+          reason: 'RESTOCK',
+          note: 'Demo Kiosk catalog seed',
+          timestamp: now,
+        }));
+
+        await supabase.from('stock_movements').insert(movementsToInsert);
+        return insertedProds as Product[];
+      }
+    }
+
     const defaultProducts: Product[] = INITIAL_SAMPLE_PRODUCTS.map((p, idx) => ({
       ...p,
       id: `prod-seed-${idx + 1}-${Date.now()}`,
@@ -374,10 +747,7 @@ export const api = {
     return defaultProducts;
   },
 
-  // -------------------------------------------------------------
-  // PHASE 2 ANALYTICS & INSIGHT AGGREGATION FUNCTIONS
-  // -------------------------------------------------------------
-
+  // Analytics Helpers
   getMetricTrends: (sales: Sale[], daysPeriod: number = 1): {
     revenueTrend: MetricTrend;
     salesCountTrend: MetricTrend;
