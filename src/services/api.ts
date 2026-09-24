@@ -320,9 +320,9 @@ export const api = {
         return getLocal<Sale[]>(SALES_KEY, []);
       }
 
-      return (salesData || []).map((s: any) => ({
+      return (salesData || []).map((s) => ({
         ...s,
-        items: s.sale_items || [],
+        items: (s.sale_items as SaleItem[]) || [],
       })) as Sale[];
     }
 
@@ -337,93 +337,22 @@ export const api = {
     if (isSupabaseConfigured()) {
       const storeId = await getActiveStoreId();
       if (storeId) {
-        const now = new Date().toISOString();
-        const saleNumber = `#INV-${Date.now().toString().slice(-6)}`;
+        const { data, error } = await supabase.rpc('create_sale_transaction', {
+          p_store_id: storeId,
+          p_items: items,
+          p_payment_method: paymentMethod,
+          p_notes: notes || null,
+        });
 
-        // Fetch products involved
-        const prodIds = items.map((i) => i.product_id);
-        const { data: prods } = await supabase.from('products').select('*').in('id', prodIds);
-
-        const productsMap = new Map((prods || []).map((p: any) => [p.id, p]));
-
-        let totalAmount = 0;
-        let totalItemsCount = 0;
-        const saleItemsToInsert: any[] = [];
-        const stockMovementsToInsert: any[] = [];
-        const productUpdates: { id: string; newStock: number }[] = [];
-
-        for (const itemReq of items) {
-          const product = productsMap.get(itemReq.product_id);
-          if (!product) continue;
-
-          const lineTotal = Math.round(product.price * itemReq.quantity);
-          totalAmount += lineTotal;
-          totalItemsCount += itemReq.quantity;
-
-          const newStock = Math.max(0, Number(product.stock_quantity) - itemReq.quantity);
-          productUpdates.push({ id: product.id, newStock });
-
-          saleItemsToInsert.push({
-            store_id: storeId,
-            product_id: product.id,
-            product_name: product.name,
-            quantity: itemReq.quantity,
-            unit_price: product.price,
-            line_total: lineTotal,
-            unit_type: product.unit_type || 'piece',
-          });
-
-          stockMovementsToInsert.push({
-            store_id: storeId,
-            product_id: product.id,
-            product_name: product.name,
-            change_amount: -itemReq.quantity,
-            quantity_after: newStock,
-            reason: 'SALE',
-            note: `Sold via sale ${saleNumber}`,
-            timestamp: now,
-          });
+        if (error) {
+          throw new Error(error.message);
         }
 
-        // 1. Insert Sale record
-        const { data: saleData, error: saleErr } = await supabase
-          .from('sales')
-          .insert({
-            store_id: storeId,
-            sale_number: saleNumber,
-            timestamp: now,
-            total_amount: totalAmount,
-            items_count: totalItemsCount,
-            status: 'COMPLETED',
-            payment_method: paymentMethod,
-            notes,
-          })
-          .select('*')
-          .single();
-
-        if (saleErr) throw new Error(saleErr.message);
-
-        // 2. Insert Sale Items
-        const itemsWithSaleId = saleItemsToInsert.map((item) => ({ ...item, sale_id: saleData.id }));
-        await supabase.from('sale_items').insert(itemsWithSaleId);
-
-        // 3. Update product stock levels
-        for (const update of productUpdates) {
-          await supabase.from('products').update({ stock_quantity: update.newStock, updated_at: now }).eq('id', update.id);
-        }
-
-        // 4. Insert Stock Movements
-        const movementsWithRef = stockMovementsToInsert.map((m) => ({ ...m, reference_id: saleData.id }));
-        await supabase.from('stock_movements').insert(movementsWithRef);
-
-        return {
-          ...saleData,
-          items: itemsWithSaleId,
-        } as Sale;
+        return data as Sale;
       }
     }
 
-    // Local Storage Fallback
+    // Local Storage Fallback (Offline/Demo)
     const products = getLocal<Product[]>(PRODUCTS_KEY, []);
     const sales = getLocal<Sale[]>(SALES_KEY, []);
     const movements = getLocal<StockMovement[]>(MOVEMENTS_KEY, []);
@@ -432,19 +361,29 @@ export const api = {
     const saleId = `sale-${Date.now()}`;
     const saleNumber = `#INV-${Date.now().toString().slice(-6)}`;
 
+    // Validate stock for local mock fallback
+    for (const itemReq of items) {
+      const product = products.find((p) => p.id === itemReq.product_id);
+      if (!product) throw new Error(`Product not found`);
+      if (product.stock_quantity < itemReq.quantity) {
+        throw new Error(
+          `Insufficient stock for product "${product.name}" (Available: ${product.stock_quantity}, Requested: ${itemReq.quantity})`
+        );
+      }
+    }
+
     let totalAmount = 0;
     let totalItemsCount = 0;
     const saleItems: SaleItem[] = [];
 
     for (const itemReq of items) {
-      const product = products.find((p) => p.id === itemReq.product_id);
-      if (!product) continue;
+      const product = products.find((p) => p.id === itemReq.product_id)!;
 
       const lineTotal = Math.round(product.price * itemReq.quantity);
       totalAmount += lineTotal;
       totalItemsCount += itemReq.quantity;
 
-      product.stock_quantity = Math.max(0, product.stock_quantity - itemReq.quantity);
+      product.stock_quantity = product.stock_quantity - itemReq.quantity;
       product.updated_at = now;
 
       const saleItem: SaleItem = {
@@ -496,55 +435,17 @@ export const api = {
     if (isSupabaseConfigured()) {
       const storeId = await getActiveStoreId();
       if (storeId) {
-        const now = new Date().toISOString();
+        const { data, error } = await supabase.rpc('void_sale_transaction', {
+          p_store_id: storeId,
+          p_sale_id: saleId,
+          p_void_reason: reason,
+        });
 
-        // 1. Fetch sale with items
-        const { data: sale, error: getErr } = await supabase
-          .from('sales')
-          .select('*, sale_items(*)')
-          .eq('id', saleId)
-          .single();
-
-        if (getErr || !sale || sale.status === 'VOIDED') throw new Error('Sale not found or already voided');
-
-        // 2. Mark sale VOIDED
-        const { data: voidedSale, error: voidErr } = await supabase
-          .from('sales')
-          .update({
-            status: 'VOIDED',
-            void_reason: reason,
-            voided_at: now,
-          })
-          .eq('id', saleId)
-          .select('*')
-          .single();
-
-        if (voidErr) throw new Error(voidErr.message);
-
-        // 3. Restore product stock & log movements
-        if (sale.sale_items) {
-          for (const item of sale.sale_items) {
-            const { data: prod } = await supabase.from('products').select('stock_quantity').eq('id', item.product_id).single();
-            if (prod) {
-              const restoredStock = Number(prod.stock_quantity) + Number(item.quantity);
-              await supabase.from('products').update({ stock_quantity: restoredStock, updated_at: now }).eq('id', item.product_id);
-
-              await supabase.from('stock_movements').insert({
-                store_id: storeId,
-                product_id: item.product_id,
-                product_name: item.product_name,
-                change_amount: item.quantity,
-                quantity_after: restoredStock,
-                reason: 'VOID_SALE',
-                reference_id: saleId,
-                note: `Voided sale ${sale.sale_number}: ${reason}`,
-                timestamp: now,
-              });
-            }
-          }
+        if (error) {
+          throw new Error(error.message);
         }
 
-        return voidedSale as Sale;
+        return data as Sale;
       }
     }
 
@@ -706,13 +607,13 @@ export const api = {
 
         if (error) throw new Error(error.message);
 
-        const movementsToInsert = (insertedProds || []).map((p: any) => ({
+        const movementsToInsert = (insertedProds || []).map((p) => ({
           store_id: storeId,
           product_id: p.id,
           product_name: p.name,
           change_amount: p.stock_quantity,
           quantity_after: p.stock_quantity,
-          reason: 'RESTOCK',
+          reason: 'RESTOCK' as const,
           note: 'Demo Kiosk catalog seed',
           timestamp: now,
         }));

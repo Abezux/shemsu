@@ -23,6 +23,7 @@ export default function SellView() {
   const [showLowStockOnly, setShowLowStockOnly] = useState<boolean>(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [warningMessage, setWarningMessage] = useState<string | null>(null);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -35,6 +36,11 @@ export default function SellView() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const showWarning = (msg: string) => {
+    setWarningMessage(msg);
+    setTimeout(() => setWarningMessage(null), 4000);
   };
 
   useEffect(() => {
@@ -68,7 +74,7 @@ export default function SellView() {
       const existing = prevCart.find((item) => item.product.id === product.id);
       if (existing) {
         if (existing.quantity >= product.stock_quantity) {
-          alert(`Cannot add more than available stock (${product.stock_quantity} ${product.unit_type || 'units'})`);
+          showWarning(`Cannot add more than available stock (${product.stock_quantity} ${product.unit_type || 'units'})`);
           return prevCart;
         }
         return prevCart.map((item) =>
@@ -128,6 +134,17 @@ export default function SellView() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 h-full">
       <div className="lg:col-span-8 flex flex-col space-y-4">
+        {warningMessage && (
+          <div className="bg-amber-500/15 border border-amber-500/30 text-amber-300 px-4 py-2.5 rounded-2xl flex items-center justify-between text-xs font-medium animate-in fade-in">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>{warningMessage}</span>
+            </div>
+            <button onClick={() => setWarningMessage(null)} className="text-amber-400 hover:text-white font-bold ml-2">
+              ✕
+            </button>
+          </div>
+        )}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-md space-y-3">
           <div className="flex flex-col sm:flex-row items-center gap-3">
             <div className="relative flex-1 w-full">

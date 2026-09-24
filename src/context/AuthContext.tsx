@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { User, Session } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { StoreSettings, BusinessType } from '@/types';
 
@@ -8,9 +9,11 @@ export interface UserStore extends StoreSettings {
   created_at?: string;
 }
 
+export type AuthUser = User | { id: string; email: string };
+
 interface AuthContextType {
-  user: any | null;
-  session: any | null;
+  user: AuthUser | null;
+  session: Session | null;
   store: UserStore | null;
   loading: boolean;
   signIn: (email: string, pass: string) => Promise<{ error?: string }>;
@@ -27,8 +30,8 @@ const LOCAL_MOCK_USER_KEY = 'shemsu_mock_user';
 const LOCAL_MOCK_STORE_KEY = 'shemsu_mock_store';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<any | null>(null);
-  const [session, setSession] = useState<any | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [store, setStore] = useState<UserStore | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -100,7 +103,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       return () => subscription.unsubscribe();
     } else {
-      // Local Mock Auth Loader
+      // Security Check: Block unauthenticated mock auth in production deployments
+      if (import.meta.env.MODE === 'production') {
+        console.error(
+          '[CRITICAL SECURITY ERROR]: Supabase is unconfigured in production mode! Local mock auth is disabled.'
+        );
+        setLoading(false);
+        return;
+      }
+
+      // Local Mock Auth Loader (Development Mode Only)
       const localUserStr = localStorage.getItem(LOCAL_MOCK_USER_KEY);
       if (localUserStr) {
         const mockUser = JSON.parse(localUserStr);
@@ -132,6 +144,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       return {};
     } else {
+      if (import.meta.env.MODE === 'production') {
+        setLoading(false);
+        return { error: 'Security Error: Supabase credentials are required in production environment.' };
+      }
+
       // Local Mock Sign In
       const mockUser = {
         id: `mock-user-${email.replace(/[^a-z0-9]/gi, '_')}`,

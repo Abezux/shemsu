@@ -135,3 +135,233 @@ CREATE POLICY sale_items_store_policy ON sale_items
 DROP POLICY IF EXISTS stock_movements_store_policy ON stock_movements;
 CREATE POLICY stock_movements_store_policy ON stock_movements
   FOR ALL USING (is_store_owner(store_id));
+
+-- =============================================================
+-- 9. ATOMIC TRANSACTION PL/PGSQL PROCEDURES
+-- =============================================================
+
+-- Atomic Create Sale Transaction
+CREATE OR REPLACE FUNCTION public.create_sale_transaction(
+  p_store_id UUID,
+  p_items JSONB,
+  p_payment_method TEXT DEFAULT 'CASH',
+  p_notes TEXT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_user_id UUID;
+  v_sale_id UUID;
+  v_sale_number TEXT;
+  v_total_amount INT := 0;
+  v_items_count NUMERIC := 0;
+  v_item RECORD;
+  v_product RECORD;
+  v_line_total INT;
+  v_now TIMESTAMPTZ := NOW();
+  v_result JSONB;
+BEGIN
+  -- 1. Security Check: verify caller owns the store
+  v_user_id := auth.uid();
+  IF v_user_id IS NULL OR NOT public.is_store_owner(p_store_id) THEN
+    RAISE EXCEPTION 'Unauthorized: You do not own store %', p_store_id;
+  END IF;
+
+  -- 2. Generate Sale ID & Receipt Number
+  v_sale_id := gen_random_uuid();
+  v_sale_number := '#INV-' || LPAD(FLOOR(RANDOM() * 1000000)::TEXT, 6, '0');
+
+  -- 3. Loop through items in p_items JSONB array
+  FOR v_item IN SELECT * FROM jsonb_to_recordset(p_items) AS x(product_id UUID, quantity NUMERIC)
+  LOOP
+    IF v_item.quantity <= 0 THEN
+      RAISE EXCEPTION 'Invalid item quantity % for product %', v_item.quantity, v_item.product_id;
+    END IF;
+
+    -- Lock product row for UPDATE
+    SELECT * INTO v_product
+    FROM public.products
+    WHERE id = v_item.product_id AND store_id = p_store_id
+    FOR UPDATE;
+
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'Product % not found in store %', v_item.product_id, p_store_id;
+    END IF;
+
+    -- Strict Stock Enforcement: Throws error if stock is insufficient
+    IF v_product.stock_quantity < v_item.quantity THEN
+      RAISE EXCEPTION 'Insufficient stock for product "%" (Available: %, Requested: %)',
+        v_product.name, v_product.stock_quantity, v_item.quantity;
+    END IF;
+
+    v_line_total := ROUND(v_product.price * v_item.quantity);
+    v_total_amount := v_total_amount + v_line_total;
+    v_items_count := v_items_count + v_item.quantity;
+
+    -- Deduct product stock
+    UPDATE public.products
+    SET stock_quantity = stock_quantity - v_item.quantity,
+        updated_at = v_now
+    WHERE id = v_product.id;
+
+    -- Insert sale item
+    INSERT INTO public.sale_items (
+      id, store_id, sale_id, product_id, product_name, quantity, unit_price, line_total, unit_type
+    ) VALUES (
+      gen_random_uuid(), p_store_id, v_sale_id, v_product.id, v_product.name,
+      v_item.quantity, v_product.price, v_line_total, COALESCE(v_product.unit_type, 'piece')
+    );
+
+    -- Insert stock movement record
+    INSERT INTO public.stock_movements (
+      id, store_id, product_id, product_name, change_amount, quantity_after, reason, reference_id, note, timestamp
+    ) VALUES (
+      gen_random_uuid(), p_store_id, v_product.id, v_product.name,
+      -v_item.quantity, v_product.stock_quantity - v_item.quantity,
+      'SALE', v_sale_id, 'Sold via sale ' || v_sale_number, v_now
+    );
+  END LOOP;
+
+  -- 4. Insert Master Sale Record
+  INSERT INTO public.sales (
+    id, store_id, sale_number, timestamp, total_amount, items_count, status, payment_method, notes
+  ) VALUES (
+    v_sale_id, p_store_id, v_sale_number, v_now, v_total_amount, v_items_count, 'COMPLETED', p_payment_method, p_notes
+  );
+
+  -- 5. Construct & Return full sale JSON
+  SELECT jsonb_build_object(
+    'id', s.id,
+    'sale_number', s.sale_number,
+    'timestamp', s.timestamp,
+    'total_amount', s.total_amount,
+    'items_count', s.items_count,
+    'status', s.status,
+    'payment_method', s.payment_method,
+    'notes', s.notes,
+    'items', (
+      SELECT COALESCE(jsonb_agg(jsonb_build_object(
+        'id', si.id,
+        'sale_id', si.sale_id,
+        'product_id', si.product_id,
+        'product_name', si.product_name,
+        'quantity', si.quantity,
+        'unit_price', si.unit_price,
+        'line_total', si.line_total,
+        'unit_type', si.unit_type
+      )), '[]'::jsonb)
+      FROM public.sale_items si
+      WHERE si.sale_id = s.id
+    )
+  ) INTO v_result
+  FROM public.sales s
+  WHERE s.id = v_sale_id;
+
+  RETURN v_result;
+END;
+$$;
+
+-- Atomic Void Sale Transaction
+CREATE OR REPLACE FUNCTION public.void_sale_transaction(
+  p_store_id UUID,
+  p_sale_id UUID,
+  p_void_reason TEXT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_user_id UUID;
+  v_sale RECORD;
+  v_item RECORD;
+  v_product RECORD;
+  v_now TIMESTAMPTZ := NOW();
+  v_result JSONB;
+BEGIN
+  -- 1. Security Check
+  v_user_id := auth.uid();
+  IF v_user_id IS NULL OR NOT public.is_store_owner(p_store_id) THEN
+    RAISE EXCEPTION 'Unauthorized: You do not own store %', p_store_id;
+  END IF;
+
+  -- 2. Lock Sale row FOR UPDATE
+  SELECT * INTO v_sale
+  FROM public.sales
+  WHERE id = p_sale_id AND store_id = p_store_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Sale % not found in store %', p_sale_id, p_store_id;
+  END IF;
+
+  IF v_sale.status = 'VOIDED' THEN
+    RAISE EXCEPTION 'Sale % is already voided', p_sale_id;
+  END IF;
+
+  -- 3. Mark Sale as VOIDED
+  UPDATE public.sales
+  SET status = 'VOIDED',
+      void_reason = p_void_reason,
+      voided_at = v_now
+  WHERE id = p_sale_id;
+
+  -- 4. Restore product stock and log stock movements for each line item
+  FOR v_item IN SELECT * FROM public.sale_items WHERE sale_id = p_sale_id LOOP
+    SELECT * INTO v_product
+    FROM public.products
+    WHERE id = v_item.product_id AND store_id = p_store_id
+    FOR UPDATE;
+
+    IF FOUND THEN
+      UPDATE public.products
+      SET stock_quantity = stock_quantity + v_item.quantity,
+          updated_at = v_now
+      WHERE id = v_product.id;
+
+      INSERT INTO public.stock_movements (
+        id, store_id, product_id, product_name, change_amount, quantity_after, reason, reference_id, note, timestamp
+      ) VALUES (
+        gen_random_uuid(), p_store_id, v_product.id, v_product.name,
+        v_item.quantity, v_product.stock_quantity + v_item.quantity,
+        'VOID_SALE', p_sale_id, 'Voided sale ' || v_sale.sale_number || ': ' || p_void_reason, v_now
+      );
+    END IF;
+  END LOOP;
+
+  -- 5. Construct & Return updated sale JSON
+  SELECT jsonb_build_object(
+    'id', s.id,
+    'sale_number', s.sale_number,
+    'timestamp', s.timestamp,
+    'total_amount', s.total_amount,
+    'items_count', s.items_count,
+    'status', s.status,
+    'payment_method', s.payment_method,
+    'notes', s.notes,
+    'void_reason', s.void_reason,
+    'voided_at', s.voided_at,
+    'items', (
+      SELECT COALESCE(jsonb_agg(jsonb_build_object(
+        'id', si.id,
+        'sale_id', si.sale_id,
+        'product_id', si.product_id,
+        'product_name', si.product_name,
+        'quantity', si.quantity,
+        'unit_price', si.unit_price,
+        'line_total', si.line_total,
+        'unit_type', si.unit_type
+      )), '[]'::jsonb)
+      FROM public.sale_items si
+      WHERE si.sale_id = s.id
+    )
+  ) INTO v_result
+  FROM public.sales s
+  WHERE s.id = p_sale_id;
+
+  RETURN v_result;
+END;
+$$;
+
