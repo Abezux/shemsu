@@ -276,7 +276,7 @@ export default function InventoryView() {
       {/* Table — Ledger Line Style */}
       <div className="ledger-card overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+          <table className="w-full min-w-[720px] text-left text-xs">
             <thead className="bg-agora-bg/80 border-b border-agora-border text-agora-ink-muted uppercase tracking-wider font-bold">
               <tr>
                 <th className="p-4">Product Name</th>

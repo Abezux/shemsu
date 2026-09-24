@@ -121,7 +121,7 @@ export default function AuditView() {
       {/* Ledger Line Style Table */}
       <div className="ledger-card overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+          <table className="w-full min-w-[700px] text-left text-xs">
             <thead className="bg-agora-bg/80 border-b border-agora-border text-agora-ink-muted uppercase tracking-wider font-bold">
               <tr>
                 <th className="p-4">Timestamp</th>

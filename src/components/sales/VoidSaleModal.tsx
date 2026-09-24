@@ -92,7 +92,7 @@ export default function VoidSaleModal({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 py-3 bg-agora-brick hover:bg-agora-brick/90 text-white font-extrabold rounded-xl text-sm shadow-md transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
+              className="flex-1 py-3 bg-agora-brick hover:bg-agora-brick/90 text-agora-card font-extrabold rounded-xl text-sm shadow-md transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
             >
               <RotateCcw className="w-4 h-4" />
               {isSubmitting ? 'Voiding...' : 'Confirm Void'}

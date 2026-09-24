@@ -158,7 +158,7 @@ export default function SellView() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search products by name or category..."
-                className="w-full bg-agora-bg border border-agora-border rounded-xl py-2 pl-9 pr-4 text-sm text-agora-ink placeholder-agora-ink-muted/60 focus:outline-none focus:border-agora-terracotta"
+                className="w-full bg-agora-bg border border-agora-border rounded-xl py-2 pl-9 pr-4 text-sm text-agora-ink placeholder:text-agora-ink-muted/80 focus:outline-none focus:border-agora-terracotta"
               />
             </div>
 

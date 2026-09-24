@@ -35,10 +35,10 @@ function AppContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#090d16] text-slate-100 flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen bg-agora-bg text-agora-ink flex flex-col items-center justify-center p-4">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-10 h-10 text-emerald-400 animate-spin" />
-          <span className="text-sm font-semibold text-slate-400">Loading Shemsu POS...</span>
+          <Loader2 className="w-10 h-10 text-agora-terracotta animate-spin" />
+          <span className="text-sm font-semibold text-agora-ink-muted">Loading Agora...</span>
         </div>
       </div>
     );
@@ -53,7 +53,7 @@ function AppContent() {
   }
 
   return (
-    <div className="bg-[#090d16] text-slate-100 min-h-screen flex flex-col pb-16 md:pb-0">
+    <div className="bg-agora-bg text-agora-ink min-h-screen flex flex-col pb-16 md:pb-0">
       <Navbar activeTab={activeTab} onNavigate={navigateTo} />
       <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-4 md:p-6">
         {activeTab === 'sell' && <SellPage />}

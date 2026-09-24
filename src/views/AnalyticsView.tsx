@@ -298,9 +298,9 @@ export default function AnalyticsView() {
         <div className="h-72 w-full pt-2">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={revenueTrendData}>
-              <XAxis dataKey="dateLabel" stroke="#8B7355" fontSize={11} tickLine={false} />
+              <XAxis dataKey="dateLabel" stroke="#6E655F" fontSize={11} tickLine={false} />
               <YAxis
-                stroke="#8B7355"
+                stroke="#6E655F"
                 fontSize={11}
                 tickLine={false}
                 tickFormatter={(v) => `${settings.currency_symbol}${v / 100}`}
@@ -350,8 +350,8 @@ export default function AnalyticsView() {
           <div className="h-60 w-full pt-2">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={hourlySalesData}>
-                <XAxis dataKey="hour" stroke="#8B7355" fontSize={10} tickLine={false} />
-                <YAxis stroke="#8B7355" fontSize={10} tickLine={false} />
+                <XAxis dataKey="hour" stroke="#6E655F" fontSize={10} tickLine={false} />
+                <YAxis stroke="#6E655F" fontSize={10} tickLine={false} />
                 <Tooltip
                   contentStyle={{ backgroundColor: '#FFFDF8', borderColor: '#E5DCC8', borderRadius: '12px', color: '#211D1A' }}
                   formatter={(value: any, name: any) => [

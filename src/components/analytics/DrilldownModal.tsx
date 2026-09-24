@@ -69,7 +69,7 @@ export default function DrilldownModal({
                   onClick={() => setFilterRange(r.id as any)}
                   className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
                     filterRange === r.id
-                      ? 'bg-agora-terracotta text-white shadow'
+                      ? 'bg-agora-terracotta text-agora-card shadow'
                       : 'text-agora-ink/60 hover:text-agora-ink'
                   }`}
                 >
