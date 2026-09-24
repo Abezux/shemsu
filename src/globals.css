@@ -3,31 +3,63 @@
 @tailwind utilities;
 
 :root {
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --agora-bg: #FAF6EE;
+  --agora-card: #FFFDF8;
+  --agora-border: #E5DCC8;
+  --agora-ink: #211D1A;
+  --agora-ink-muted: #6E655F;
+  --agora-terracotta: #C1502E;
+  --agora-brass: #8B7355;
+  --agora-sage: #5C7A52;
+  --agora-brick: #9B4038;
 }
 
 body {
-  font-family: var(--font-sans);
-  background-color: #090d16;
-  color: #f1f5f9;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--agora-bg);
+  color: var(--agora-ink);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
 }
 
+/* Serif display font for headings and numbers */
+.font-serif {
+  font-family: 'Fraunces', Georgia, serif;
+}
+
+/* Ledger paper card container */
+.ledger-card {
+  background-color: #FFFDF8;
+  border: 1px solid #E5DCC8;
+  border-radius: 1rem;
+  box-shadow: 0 2px 4px rgba(33, 29, 26, 0.03);
+}
+
+/* Ledger row horizontal rule style */
+.ledger-row {
+  border-bottom: 1px solid #E5DCC8;
+  transition: background-color 0.15s ease;
+}
+
+.ledger-row:hover {
+  background-color: #F4EFE6;
+}
+
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: #FAF6EE;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #D9CFBF;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #8B7355;
 }

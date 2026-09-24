@@ -5,7 +5,6 @@ import {
   History, 
   FileText, 
   BarChart3, 
-  Store, 
   Sparkles,
   Wifi,
   Settings,
@@ -16,6 +15,7 @@ import { api } from '@/services/api';
 import { StoreSettings } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import SettingsModal from '@/components/settings/SettingsModal';
+import AgoraLogo from './AgoraLogo';
 
 interface NavbarProps {
   activeTab: string;
@@ -33,7 +33,7 @@ const BUSINESS_TYPE_BADGES: Record<string, { label: string; icon: string }> = {
 export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
   const { user, store, signOut, refreshStore } = useAuth();
   const [settings, setSettings] = useState<StoreSettings>({
-    store_name: store?.store_name || 'Shemsu Kiosk POS',
+    store_name: store?.store_name || 'Agora Kiosk POS',
     currency_symbol: store?.currency_symbol || '$',
     currency_code: store?.currency_code || 'USD',
     low_stock_alerts_enabled: true,
@@ -98,35 +98,36 @@ export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
   return (
     <>
       {/* Top Bar (Desktop & Mobile Header) */}
-      <header className="sticky top-0 z-30 bg-slate-900 border-b border-slate-800 text-white shadow-md">
+      <header className="sticky top-0 z-30 bg-agora-card border-b border-agora-border text-agora-ink shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-emerald-500/20 p-2 rounded-xl text-emerald-400 border border-emerald-500/30">
-              <Store className="w-6 h-6" />
-            </div>
+            <AgoraLogo size="md" />
+            
+            <div className="hidden sm:block h-8 w-[1px] bg-agora-border mx-1" />
+
             <div>
-              <h1 className="font-bold text-lg tracking-tight leading-tight flex items-center gap-2">
+              <h1 className="font-serif font-bold text-base tracking-tight leading-tight flex items-center gap-2 text-agora-ink">
                 {settings.store_name}
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                <span className="text-xs font-sans font-semibold px-2 py-0.5 rounded-full bg-agora-brass/10 text-agora-brass border border-agora-brass/30 flex items-center gap-1">
                   <span>{badge.icon}</span> {badge.label}
                 </span>
               </h1>
-              <div className="flex items-center gap-3 text-xs text-slate-400">
-                <span className="flex items-center gap-1 text-emerald-400">
-                  <Wifi className="w-3 h-3 text-emerald-400" />
+              <div className="flex items-center gap-3 text-xs text-agora-ink-muted mt-0.5">
+                <span className="flex items-center gap-1 text-agora-sage font-medium">
+                  <Wifi className="w-3 h-3 text-agora-sage" />
                   <span>Cloud Active</span>
                 </span>
                 {user?.email && (
                   <>
                     <span>•</span>
-                    <span className="flex items-center gap-1 text-slate-300">
-                      <User className="w-3 h-3 text-slate-400" />
+                    <span className="flex items-center gap-1 text-agora-ink-muted">
+                      <User className="w-3 h-3 text-agora-brass" />
                       <span className="truncate max-w-[140px] sm:max-w-none">{user.email}</span>
                     </span>
                   </>
                 )}
                 <span>•</span>
-                <span>Currency: <strong className="text-white">{settings.currency_symbol} ({settings.currency_code})</strong></span>
+                <span>Currency: <strong className="font-serif text-agora-ink">{settings.currency_symbol} ({settings.currency_code})</strong></span>
               </div>
             </div>
           </div>
@@ -135,34 +136,34 @@ export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
             <button
               onClick={handleSeed}
               disabled={isSeeding}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 text-xs font-medium transition-all active:scale-95 disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-agora-terracotta/10 hover:bg-agora-terracotta/20 border border-agora-terracotta/30 text-agora-terracotta text-xs font-bold transition-all active:scale-95 disabled:opacity-50"
               title="Load demo kiosk products"
             >
-              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+              <Sparkles className="w-3.5 h-3.5 text-agora-terracotta" />
               <span className="hidden sm:inline">{isSeeding ? 'Seeding...' : 'Load Demo Catalog'}</span>
               <span className="sm:hidden">Demo</span>
             </button>
 
             <button
               onClick={() => setIsSettingsOpen(true)}
-              className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all"
+              className="p-2 rounded-xl bg-agora-brass/10 hover:bg-agora-brass/20 text-agora-brass border border-agora-brass/30 transition-all"
               title="Store settings & Business Vertical"
             >
-              <Settings className="w-4 h-4 text-emerald-400" />
+              <Settings className="w-4 h-4 text-agora-brass" />
             </button>
 
             <button
               onClick={() => signOut()}
-              className="p-2 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 transition-all"
-              title="Sign Out of Shemsu"
+              className="p-2 rounded-xl bg-agora-brick/10 hover:bg-agora-brick/20 text-agora-brick border border-agora-brick/30 transition-all"
+              title="Sign Out of Agora"
             >
-              <LogOut className="w-4 h-4 text-rose-400" />
+              <LogOut className="w-4 h-4 text-agora-brick" />
             </button>
           </div>
         </div>
 
         {/* Desktop Navigation Tabs */}
-        <div className="hidden md:block bg-slate-950/60 border-t border-slate-800/80">
+        <div className="hidden md:block bg-agora-bg/60 border-t border-agora-border">
           <div className="max-w-7xl mx-auto px-4 flex gap-1">
             {navLinks.map((link) => {
               const Icon = link.icon;
@@ -171,13 +172,13 @@ export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
                 <button
                   key={link.id}
                   onClick={() => onNavigate(link.id)}
-                  className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-all ${
+                  className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition-all ${
                     isActive
-                      ? 'border-emerald-400 text-emerald-400 bg-emerald-500/10'
-                      : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                      ? 'border-agora-terracotta text-agora-terracotta bg-agora-terracotta/10'
+                      : 'border-transparent text-agora-ink-muted hover:text-agora-ink hover:bg-agora-card/60'
                   }`}
                 >
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-emerald-400' : 'text-slate-400'}`} />
+                  <Icon className={`w-4 h-4 ${isActive ? 'text-agora-terracotta' : 'text-agora-ink-muted'}`} />
                   {link.label}
                 </button>
               );
@@ -187,7 +188,7 @@ export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
       </header>
 
       {/* Mobile Bottom Navigation Bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 text-white shadow-2xl">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-agora-card/95 backdrop-blur-md border-t border-agora-border text-agora-ink shadow-lg">
         <div className="grid grid-cols-5 gap-1 p-1">
           {navLinks.map((link) => {
             const Icon = link.icon;
@@ -196,13 +197,13 @@ export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
               <button
                 key={link.id}
                 onClick={() => onNavigate(link.id)}
-                className={`flex flex-col items-center justify-center py-2 px-1 rounded-lg text-center transition-all ${
+                className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl text-center transition-all ${
                   isActive
-                    ? 'text-emerald-400 bg-emerald-500/15 font-semibold'
-                    : 'text-slate-400 hover:text-slate-200 active:bg-slate-800'
+                    ? 'text-agora-terracotta bg-agora-terracotta/15 font-bold'
+                    : 'text-agora-ink-muted hover:text-agora-ink active:bg-agora-bg'
                 }`}
               >
-                <Icon className={`w-5 h-5 mb-1 ${isActive ? 'text-emerald-400' : 'text-slate-400'}`} />
+                <Icon className={`w-5 h-5 mb-1 ${isActive ? 'text-agora-terracotta' : 'text-agora-ink-muted'}`} />
                 <span className="text-[10px] leading-tight truncate w-full">{link.label.split(' ')[0]}</span>
               </button>
             );

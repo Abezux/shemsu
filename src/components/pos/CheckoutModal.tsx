@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { CartItem, Sale } from '@/types';
 import { formatCurrency, parseInputToCents } from '@/utils/currency';
-import { X, CheckCircle2, DollarSign, Smartphone, CreditCard, HelpCircle, Receipt } from 'lucide-react';
+import { X, DollarSign, Smartphone, CreditCard, HelpCircle, Receipt, Award } from 'lucide-react';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -63,56 +63,66 @@ export default function CheckoutModal({
       if (sale) {
         setCompletedSale(sale);
       }
-    } catch (err) {
-      alert('Failed to complete sale: ' + err);
+    } catch (err: any) {
+      alert('Failed to complete sale: ' + (err.message || err));
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 bg-agora-ink/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-agora-card border border-agora-border rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 text-agora-ink">
         {completedSale ? (
-          /* Sale Success View */
-          <div className="p-6 text-center space-y-4">
-            <div className="w-16 h-16 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full flex items-center justify-center mx-auto animate-bounce">
-              <CheckCircle2 className="w-10 h-10" />
+          /* Sale Success View with Signature Stamp Seal */
+          <div className="p-6 text-center space-y-5">
+            {/* Signature Stamp Seal Mark */}
+            <div className="relative mx-auto w-24 h-24 flex items-center justify-center my-2">
+              <div className="absolute inset-0 rounded-full border-4 border-dashed border-agora-terracotta/40 animate-spin-slow" />
+              <div className="w-20 h-20 rounded-full border-2 border-agora-terracotta bg-agora-terracotta/10 flex flex-col items-center justify-center p-2 transform -rotate-12 shadow-sm">
+                <Award className="w-6 h-6 text-agora-terracotta" />
+                <span className="font-serif font-black text-[9px] uppercase tracking-widest text-agora-terracotta leading-none mt-0.5">
+                  AGORA
+                </span>
+                <span className="text-[7px] font-bold tracking-tighter text-agora-terracotta uppercase">
+                  VERIFIED RECORD
+                </span>
+              </div>
             </div>
 
             <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
-                Sale Completed Successfully
+              <span className="text-xs font-serif font-bold uppercase tracking-wider text-agora-sage bg-agora-sage-light px-3 py-1 rounded-full border border-agora-sage-border">
+                Sale Entry Recorded
               </span>
-              <h2 className="text-2xl font-black text-slate-100 mt-2">
+              <h2 className="text-3xl font-serif font-black text-agora-terracotta mt-3">
                 {formatCurrency(completedSale.total_amount, currencySymbol)}
               </h2>
-              <p className="text-xs text-slate-400 mt-1">
-                Receipt {completedSale.sale_number} • Stock updated automatically
+              <p className="text-xs text-agora-ink-muted mt-1 font-medium">
+                Receipt {completedSale.sale_number} • Ledger inventory updated
               </p>
             </div>
 
             {/* Change Display */}
             {paymentMethod === 'CASH' && cashTenderedInCents > totalAmountInCents && (
-              <div className="bg-emerald-950/50 border border-emerald-800/60 rounded-2xl p-4 text-center">
-                <span className="text-xs text-emerald-300 uppercase tracking-wider font-semibold">
+              <div className="bg-agora-sage-light border border-agora-sage-border rounded-2xl p-4 text-center">
+                <span className="text-xs text-agora-sage uppercase tracking-wider font-bold block">
                   Change to return to customer
                 </span>
-                <div className="text-3xl font-extrabold text-emerald-400 mt-0.5">
+                <div className="text-3xl font-serif font-black text-agora-sage mt-1">
                   {formatCurrency(changeInCents, currencySymbol)}
                 </div>
               </div>
             )}
 
-            {/* Sold Items Summary */}
-            <div className="bg-slate-950/60 rounded-2xl p-4 text-left max-h-40 overflow-y-auto space-y-2 border border-slate-800">
-              <div className="flex justify-between text-xs font-bold text-slate-400 border-b border-slate-800 pb-1">
-                <span>Item</span>
-                <span>Qty × Price</span>
+            {/* Sold Items Summary — Ledger Line Rows */}
+            <div className="bg-agora-bg border border-agora-border rounded-2xl p-4 text-left max-h-40 overflow-y-auto space-y-2">
+              <div className="flex justify-between text-xs font-bold text-agora-ink-muted border-b border-agora-border pb-1">
+                <span>Item Description</span>
+                <span>Qty × Unit Price</span>
               </div>
               {completedSale.items?.map((item) => (
-                <div key={item.id} className="flex justify-between text-xs text-slate-200">
-                  <span className="truncate max-w-[200px]">{item.product_name}</span>
-                  <span className="font-semibold">
+                <div key={item.id} className="flex justify-between text-xs text-agora-ink border-b border-agora-border/40 pb-1">
+                  <span className="truncate max-w-[200px] font-medium">{item.product_name}</span>
+                  <span className="font-serif font-bold">
                     {item.quantity} × {formatCurrency(item.unit_price, currencySymbol)}
                   </span>
                 </div>
@@ -121,7 +131,7 @@ export default function CheckoutModal({
 
             <button
               onClick={onClose}
-              className="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-lg rounded-2xl shadow-lg transition-all active:scale-[0.99]"
+              className="w-full py-3.5 bg-agora-terracotta hover:bg-agora-terracotta-hover text-agora-card font-serif font-bold text-lg rounded-xl shadow-md transition-all active:scale-[0.99]"
             >
               Done & Start Next Sale
             </button>
@@ -130,14 +140,14 @@ export default function CheckoutModal({
           /* Checkout Form View */
           <div>
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+            <div className="px-6 py-4 border-b border-agora-border flex items-center justify-between bg-agora-bg/50">
               <div className="flex items-center gap-2">
-                <Receipt className="w-5 h-5 text-emerald-400" />
-                <h3 className="font-bold text-slate-100 text-lg">Checkout & Complete Sale</h3>
+                <Receipt className="w-5 h-5 text-agora-terracotta" />
+                <h3 className="font-serif font-bold text-agora-ink text-lg">Record Sale Entry</h3>
               </div>
               <button
                 onClick={onClose}
-                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-all"
+                className="text-agora-ink-muted hover:text-agora-ink p-1 rounded-lg hover:bg-agora-bg transition-all"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -145,23 +155,23 @@ export default function CheckoutModal({
 
             <form onSubmit={handleSubmit} className="p-6 space-y-5">
               {/* Total Banner */}
-              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex justify-between items-center">
+              <div className="bg-agora-bg p-4 rounded-2xl border border-agora-border flex justify-between items-center">
                 <div>
-                  <span className="text-xs text-slate-400 uppercase tracking-wider font-medium">
+                  <span className="text-xs text-agora-ink-muted uppercase tracking-wider font-bold">
                     Total Amount Due
                   </span>
-                  <div className="text-2xl font-black text-emerald-400">
+                  <div className="text-3xl font-serif font-black text-agora-terracotta">
                     {formatCurrency(totalAmountInCents, currencySymbol)}
                   </div>
                 </div>
-                <span className="text-xs bg-slate-800 text-slate-300 font-semibold px-3 py-1.5 rounded-xl border border-slate-700">
+                <span className="text-xs bg-agora-card text-agora-ink font-bold px-3 py-1.5 rounded-xl border border-agora-border">
                   {cart.reduce((s, i) => s + i.quantity, 0)} Items
                 </span>
               </div>
 
               {/* Payment Method Selector */}
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+                <label className="block text-xs font-bold uppercase tracking-wider text-agora-ink-muted mb-2">
                   Payment Method
                 </label>
                 <div className="grid grid-cols-2 gap-2">
@@ -180,8 +190,8 @@ export default function CheckoutModal({
                         onClick={() => setPaymentMethod(pm.id as any)}
                         className={`flex items-center gap-2 p-3 rounded-xl border text-xs font-bold transition-all ${
                           isSelected
-                            ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
-                            : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200'
+                            ? 'bg-agora-terracotta/15 border-agora-terracotta text-agora-terracotta shadow-sm'
+                            : 'bg-agora-bg/60 border-agora-border text-agora-ink-muted hover:text-agora-ink'
                         }`}
                       >
                         <Icon className="w-4 h-4" />
@@ -194,22 +204,22 @@ export default function CheckoutModal({
 
               {/* Cash Calculator (if CASH chosen) */}
               {paymentMethod === 'CASH' && (
-                <div className="space-y-3 bg-slate-950/50 p-4 rounded-2xl border border-slate-800/80">
+                <div className="space-y-3 bg-agora-bg/70 p-4 rounded-2xl border border-agora-border">
                   <div className="flex justify-between items-center">
-                    <label className="text-xs font-semibold text-slate-300">
+                    <label className="text-xs font-bold text-agora-ink">
                       Cash Tendered
                     </label>
                     <button
                       type="button"
                       onClick={handleExactCash}
-                      className="text-xs font-bold text-emerald-400 hover:underline"
+                      className="text-xs font-bold text-agora-terracotta hover:underline"
                     >
                       Exact Cash
                     </button>
                   </div>
 
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-agora-ink-muted font-serif font-bold">
                       {currencySymbol}
                     </span>
                     <input
@@ -217,19 +227,19 @@ export default function CheckoutModal({
                       step="0.01"
                       value={cashTenderedInput}
                       onChange={(e) => setCashTenderedInput(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl py-2.5 pl-8 pr-4 text-white font-bold text-lg focus:outline-none focus:border-emerald-500"
+                      className="w-full bg-agora-card border border-agora-border rounded-xl py-2.5 pl-8 pr-4 text-agora-ink font-serif font-bold text-lg focus:outline-none focus:border-agora-terracotta"
                       placeholder="0.00"
                     />
                   </div>
 
                   {/* Quick Cash Presets */}
-                  <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
                     {[5, 10, 20, 50, 100].map((amt) => (
                       <button
                         key={amt}
                         type="button"
                         onClick={() => handlePresetCash(amt)}
-                        className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 shrink-0"
+                        className="px-3 py-1 rounded-xl bg-agora-card hover:bg-agora-border text-agora-ink text-xs font-serif font-bold border border-agora-border shrink-0"
                       >
                         {currencySymbol}{amt}
                       </button>
@@ -238,9 +248,9 @@ export default function CheckoutModal({
 
                   {/* Change Output */}
                   {cashTenderedInCents >= totalAmountInCents && (
-                    <div className="flex justify-between items-center pt-2 border-t border-slate-800 text-xs">
-                      <span className="text-slate-400 font-medium">Change to return:</span>
-                      <span className="font-extrabold text-emerald-400 text-sm">
+                    <div className="flex justify-between items-center pt-2 border-t border-agora-border text-xs">
+                      <span className="text-agora-ink-muted font-medium">Change to return:</span>
+                      <span className="font-serif font-bold text-agora-sage text-base">
                         {formatCurrency(changeInCents, currencySymbol)}
                       </span>
                     </div>
@@ -250,15 +260,15 @@ export default function CheckoutModal({
 
               {/* Note / Memo */}
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">
-                  Optional Sale Note
+                <label className="block text-xs font-bold uppercase tracking-wider text-agora-ink-muted mb-1">
+                  Optional Ledger Note
                 </label>
                 <input
                   type="text"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="e.g. Customer requested discount or split bill"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500"
+                  placeholder="e.g. Customer requested discount or split payment"
+                  className="w-full bg-agora-bg border border-agora-border rounded-xl py-2 px-3 text-xs text-agora-ink placeholder-agora-ink-muted/60 focus:outline-none focus:border-agora-terracotta"
                 />
               </div>
 
@@ -267,7 +277,7 @@ export default function CheckoutModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-sm transition-all"
+                  className="flex-1 py-3 bg-agora-bg hover:bg-agora-border text-agora-ink font-bold rounded-xl text-sm transition-all border border-agora-border"
                 >
                   Cancel
                 </button>
@@ -275,9 +285,9 @@ export default function CheckoutModal({
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold rounded-xl text-sm shadow-lg transition-all disabled:opacity-50"
+                  className="flex-1 py-3 bg-agora-terracotta hover:bg-agora-terracotta-hover text-agora-card font-serif font-bold rounded-xl text-sm shadow-md transition-all disabled:opacity-50"
                 >
-                  {isSubmitting ? 'Processing...' : 'Complete & Print'}
+                  {isSubmitting ? 'Recording...' : 'Record Entry'}
                 </button>
               </div>
             </form>

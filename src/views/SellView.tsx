@@ -10,7 +10,7 @@ export default function SellView() {
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [settings, setSettings] = useState<StoreSettings>({
-    store_name: 'Corner Kiosk',
+    store_name: 'Agora Kiosk',
     currency_symbol: '$',
     currency_code: 'USD',
     low_stock_alerts_enabled: true,
@@ -94,7 +94,10 @@ export default function SellView() {
           if (item.product.id === productId) {
             const newQty = item.quantity + delta;
             if (newQty <= 0) return null;
-            if (newQty > item.product.stock_quantity) return item;
+            if (newQty > item.product.stock_quantity) {
+              showWarning(`Stock limit reached (${item.product.stock_quantity} available)`);
+              return item;
+            }
             return { ...item, quantity: newQty };
           }
           return item;
@@ -135,26 +138,27 @@ export default function SellView() {
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 h-full">
       <div className="lg:col-span-8 flex flex-col space-y-4">
         {warningMessage && (
-          <div className="bg-amber-500/15 border border-amber-500/30 text-amber-300 px-4 py-2.5 rounded-2xl flex items-center justify-between text-xs font-medium animate-in fade-in">
+          <div className="bg-agora-brick-light border border-agora-brick-border text-agora-brick px-4 py-2.5 rounded-2xl flex items-center justify-between text-xs font-semibold animate-in fade-in">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+              <AlertTriangle className="w-4 h-4 text-agora-brick shrink-0" />
               <span>{warningMessage}</span>
             </div>
-            <button onClick={() => setWarningMessage(null)} className="text-amber-400 hover:text-white font-bold ml-2">
+            <button onClick={() => setWarningMessage(null)} className="text-agora-brick hover:text-agora-ink font-bold ml-2">
               ✕
             </button>
           </div>
         )}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-md space-y-3">
+
+        <div className="ledger-card p-4 space-y-3 shadow-sm">
           <div className="flex flex-col sm:flex-row items-center gap-3">
             <div className="relative flex-1 w-full">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-agora-ink-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search products by name or category..."
-                className="w-full bg-slate-950 border border-slate-700/80 rounded-xl py-2 pl-9 pr-4 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                className="w-full bg-agora-bg border border-agora-border rounded-xl py-2 pl-9 pr-4 text-sm text-agora-ink placeholder-agora-ink-muted/60 focus:outline-none focus:border-agora-terracotta"
               />
             </div>
 
@@ -162,10 +166,10 @@ export default function SellView() {
               <button
                 type="button"
                 onClick={() => setShowLowStockOnly(!showLowStockOnly)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold transition-all ${
+                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-bold transition-all ${
                   showLowStockOnly
-                    ? 'bg-amber-500/20 border-amber-500 text-amber-300'
-                    : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                    ? 'bg-agora-terracotta/15 border-agora-terracotta text-agora-terracotta'
+                    : 'bg-agora-card border-agora-border text-agora-ink-muted hover:text-agora-ink'
                 }`}
               >
                 <AlertTriangle className="w-3.5 h-3.5" />
@@ -175,7 +179,7 @@ export default function SellView() {
               <button
                 type="button"
                 onClick={loadData}
-                className="p-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 hover:text-white transition-all"
+                className="p-2 rounded-xl bg-agora-card border border-agora-border text-agora-ink-muted hover:text-agora-ink transition-all"
                 title="Refresh catalog"
               >
                 <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -190,8 +194,8 @@ export default function SellView() {
                 onClick={() => setSelectedCategory(cat)}
                 className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
                   selectedCategory === cat
-                    ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/10'
-                    : 'bg-slate-950/80 border border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                    ? 'bg-agora-terracotta text-agora-card shadow-sm'
+                    : 'bg-agora-card border border-agora-border text-agora-ink-muted hover:text-agora-ink hover:bg-agora-bg'
                 }`}
               >
                 {cat}
@@ -204,18 +208,18 @@ export default function SellView() {
           {isLoading ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 animate-pulse">
               {[...Array(8)].map((_, i) => (
-                <div key={i} className="h-36 bg-slate-900 rounded-2xl border border-slate-800"></div>
+                <div key={i} className="h-36 bg-agora-card rounded-2xl border border-agora-border"></div>
               ))}
             </div>
           ) : filteredProducts.length === 0 ? (
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-10 text-center text-slate-400 space-y-3">
-              <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center mx-auto text-slate-500">
+            <div className="ledger-card p-10 text-center text-agora-ink-muted space-y-3">
+              <div className="w-12 h-12 rounded-full bg-agora-bg border border-agora-border flex items-center justify-center mx-auto text-agora-brass">
                 <ShoppingCart className="w-6 h-6" />
               </div>
-              <h3 className="font-bold text-slate-200 text-base">No matching products</h3>
-              <p className="text-xs text-slate-500 max-w-xs mx-auto">
+              <h3 className="font-serif font-bold text-agora-ink text-lg">No matching catalog items</h3>
+              <p className="text-xs text-agora-ink-muted max-w-xs mx-auto">
                 {products.length === 0
-                  ? 'Your shop catalog is currently empty. Click "Load Kiosk Demo Catalog" in the top bar to seed demo items.'
+                  ? 'Your shop catalog is currently empty. Click "Load Demo Catalog" in the top bar to seed demo items.'
                   : 'Try clearing your search query or selecting a different category.'}
               </p>
               {products.length === 0 && (
@@ -224,13 +228,14 @@ export default function SellView() {
                     await api.seedDemo();
                     loadData();
                   }}
-                  className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-emerald-500 text-slate-950 text-xs font-bold rounded-xl shadow-lg"
+                  className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-agora-terracotta text-agora-card text-xs font-serif font-bold rounded-xl shadow-md"
                 >
-                  <Sparkles className="w-4 h-4" /> Load Sample Kiosk Catalog
+                  <Sparkles className="w-4 h-4" /> Load Sample Demo Catalog
                 </button>
               )}
             </div>
           ) : (
+            /* Tactile Tap Card Grid for Product Selection */
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {filteredProducts.map((product) => {
                 const cartItem = cart.find((i) => i.product.id === product.id);
