@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Product, ProductCategory, UnitType, BusinessType, StoreSettings } from '@/types';
+import { Product, ProductCategory, UnitType, StoreSettings } from '@/types';
 import { parseInputToCents, centsToDecimalString } from '@/utils/currency';
 import { api } from '@/services/api';
-import { X, Package, Layers, Calendar, FileText, Clock, AlertCircle } from 'lucide-react';
+import { X, Package, AlertCircle } from 'lucide-react';
 
 interface AddEditProductModalProps {
   isOpen: boolean;
@@ -113,8 +113,8 @@ export default function AddEditProductModal({
         image_url: imageUrl,
       });
       onClose();
-    } catch (err) {
-      alert('Failed to save product: ' + err);
+    } catch (err: any) {
+      alert('Failed to save product: ' + (err.message || err));
     } finally {
       setIsSubmitting(false);
     }
@@ -123,18 +123,18 @@ export default function AddEditProductModal({
   const businessType = settings?.business_type || 'GENERAL_RETAIL';
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+    <div className="fixed inset-0 z-50 bg-agora-ink/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-agora-card border border-agora-border rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 text-agora-ink">
+        <div className="px-6 py-4 border-b border-agora-border flex items-center justify-between bg-agora-bg/50">
           <div className="flex items-center gap-2">
-            <Package className="w-5 h-5 text-emerald-400" />
-            <h3 className="font-bold text-slate-100 text-lg">
-              {productToEdit ? 'Edit Product' : 'Add New Product'}
+            <Package className="w-5 h-5 text-agora-terracotta" />
+            <h3 className="font-serif font-bold text-agora-ink text-lg">
+              {productToEdit ? 'Edit Catalog Item' : 'Add New Product'}
             </h3>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-all"
+            className="text-agora-ink-muted hover:text-agora-ink p-1 rounded-lg hover:bg-agora-bg transition-all"
           >
             <X className="w-5 h-5" />
           </button>
@@ -143,12 +143,12 @@ export default function AddEditProductModal({
         <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
           {/* Name & Icon */}
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-300">Product Name</label>
+            <label className="text-xs font-bold text-agora-ink">Product Name</label>
             <div className="flex gap-2">
               <select
                 value={imageUrl}
                 onChange={(e) => setImageUrl(e.target.value)}
-                className="bg-slate-950 border border-slate-700 rounded-xl px-2 text-xl focus:outline-none"
+                className="bg-agora-bg border border-agora-border rounded-xl px-2 text-xl focus:outline-none"
               >
                 {EMOJI_ICONS.map((emoji) => (
                   <option key={emoji} value={emoji}>
@@ -162,7 +162,7 @@ export default function AddEditProductModal({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Paracetamol 500mg or Coca Cola"
-                className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white font-medium focus:outline-none focus:border-emerald-500"
+                className="flex-1 bg-agora-bg border border-agora-border rounded-xl px-3 py-2 text-sm text-agora-ink font-semibold focus:outline-none focus:border-agora-terracotta"
               />
             </div>
           </div>
@@ -170,11 +170,11 @@ export default function AddEditProductModal({
           {/* Category & Unit Type */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-300">Category</label>
+              <label className="text-xs font-bold text-agora-ink">Category</label>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-medium focus:outline-none focus:border-emerald-500"
+                className="w-full bg-agora-bg border border-agora-border rounded-xl px-3 py-2 text-xs text-agora-ink font-semibold focus:outline-none focus:border-agora-terracotta"
               >
                 {CATEGORIES.map((cat) => (
                   <option key={cat} value={cat}>
@@ -185,11 +185,11 @@ export default function AddEditProductModal({
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-300">Unit of Sale</label>
+              <label className="text-xs font-bold text-agora-ink">Unit of Sale</label>
               <select
                 value={unitType}
                 onChange={(e) => setUnitType(e.target.value as UnitType)}
-                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-medium focus:outline-none focus:border-emerald-500"
+                className="w-full bg-agora-bg border border-agora-border rounded-xl px-3 py-2 text-xs text-agora-ink font-semibold focus:outline-none focus:border-agora-terracotta"
               >
                 {UNIT_TYPES.map((u) => (
                   <option key={u.id} value={u.id}>
@@ -203,7 +203,7 @@ export default function AddEditProductModal({
           {/* Pricing Grid */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-300">
+              <label className="text-xs font-bold text-agora-ink">
                 Selling Price ({currencySymbol})
               </label>
               <input
@@ -213,13 +213,13 @@ export default function AddEditProductModal({
                 value={priceInput}
                 onChange={(e) => setPriceInput(e.target.value)}
                 placeholder="1.50"
-                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white font-bold focus:outline-none focus:border-emerald-500"
+                className="w-full bg-agora-bg border border-agora-border rounded-xl px-3 py-2 text-sm text-agora-ink font-serif font-bold focus:outline-none focus:border-agora-terracotta"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-400">
-                Cost Price ({currencySymbol}) <span className="text-[10px] text-slate-500">(Optional)</span>
+              <label className="text-xs font-bold text-agora-ink-muted">
+                Cost Price ({currencySymbol}) <span className="text-[10px] text-agora-ink-muted/70">(Optional)</span>
               </label>
               <input
                 type="number"
@@ -227,15 +227,15 @@ export default function AddEditProductModal({
                 value={costPriceInput}
                 onChange={(e) => setCostPriceInput(e.target.value)}
                 placeholder="0.90"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-emerald-500"
+                className="w-full bg-agora-bg border border-agora-border rounded-xl px-3 py-2 text-sm text-agora-ink focus:outline-none focus:border-agora-terracotta"
               />
             </div>
           </div>
 
           {/* Inventory Controls */}
-          <div className="grid grid-cols-2 gap-3 bg-slate-950/60 p-4 rounded-2xl border border-slate-800">
+          <div className="grid grid-cols-2 gap-3 bg-agora-bg/60 p-4 rounded-2xl border border-agora-border">
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-300">
+              <label className="text-xs font-bold text-agora-ink">
                 Current Stock ({unitType})
               </label>
               <input
@@ -245,12 +245,12 @@ export default function AddEditProductModal({
                 required
                 value={stockQuantity}
                 onChange={(e) => setStockQuantity(parseFloat(e.target.value) || 0)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white font-bold focus:outline-none focus:border-emerald-500"
+                className="w-full bg-agora-card border border-agora-border rounded-xl px-3 py-2 text-sm text-agora-ink font-serif font-bold focus:outline-none focus:border-agora-terracotta"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-amber-400 flex items-center gap-1">
+              <label className="text-xs font-bold text-agora-terracotta flex items-center gap-1">
                 <AlertCircle className="w-3.5 h-3.5" /> Alert Level
               </label>
               <input
@@ -259,14 +259,14 @@ export default function AddEditProductModal({
                 required
                 value={lowStockThreshold}
                 onChange={(e) => setLowStockThreshold(parseInt(e.target.value) || 1)}
-                className="w-full bg-slate-900 border border-amber-500/40 rounded-xl px-3 py-2 text-sm text-amber-300 font-bold focus:outline-none focus:border-amber-400"
+                className="w-full bg-agora-card border border-agora-terracotta-border rounded-xl px-3 py-2 text-sm text-agora-terracotta font-serif font-bold focus:outline-none focus:border-agora-terracotta"
               />
             </div>
           </div>
 
           {/* Business Vertical Specific Dynamic Attributes */}
-          <div className="bg-slate-950/40 p-4 rounded-2xl border border-slate-800 space-y-3">
-            <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider block">
+          <div className="bg-agora-bg/40 p-4 rounded-2xl border border-agora-border space-y-3">
+            <span className="text-xs font-bold text-agora-terracotta uppercase tracking-wider block">
               Vertical Attributes ({businessType.replace('_', ' ')})
             </span>
 
@@ -275,33 +275,33 @@ export default function AddEditProductModal({
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-[11px] font-semibold text-slate-300">Expiry Date</label>
+                    <label className="text-[11px] font-bold text-agora-ink">Expiry Date</label>
                     <input
                       type="date"
                       value={attributes.expiry_date || ''}
                       onChange={(e) => handleAttrChange('expiry_date', e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-white"
+                      className="w-full bg-agora-card border border-agora-border rounded-xl px-2.5 py-1.5 text-xs text-agora-ink"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-semibold text-slate-300">Batch Number</label>
+                    <label className="text-[11px] font-bold text-agora-ink">Batch Number</label>
                     <input
                       type="text"
                       placeholder="e.g. BCH-901"
                       value={attributes.batch_no || ''}
                       onChange={(e) => handleAttrChange('batch_no', e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-white"
+                      className="w-full bg-agora-card border border-agora-border rounded-xl px-2.5 py-1.5 text-xs text-agora-ink"
                     />
                   </div>
                 </div>
 
-                <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer pt-1">
+                <label className="flex items-center gap-2 text-xs text-agora-ink font-semibold cursor-pointer pt-1">
                   <input
                     type="checkbox"
                     checked={!!attributes.prescription_required}
                     onChange={(e) => handleAttrChange('prescription_required', e.target.checked)}
-                    className="rounded bg-slate-900 border-slate-700 text-emerald-500 focus:ring-emerald-500"
+                    className="rounded bg-agora-card border-agora-border text-agora-terracotta focus:ring-agora-terracotta"
                   />
                   <span>Requires Prescription (Rx)</span>
                 </label>
@@ -312,63 +312,43 @@ export default function AddEditProductModal({
             {businessType === 'RESTAURANT' && (
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[11px] font-semibold text-slate-300">Prep Time (mins)</label>
+                  <label className="text-[11px] font-bold text-agora-ink">Prep Time (mins)</label>
                   <input
                     type="number"
                     placeholder="15"
                     value={attributes.prep_time_mins || ''}
                     onChange={(e) => handleAttrChange('prep_time_mins', parseInt(e.target.value) || '')}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-white"
+                    className="w-full bg-agora-card border border-agora-border rounded-xl px-2.5 py-1.5 text-xs text-agora-ink"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-semibold text-slate-300">Allergens</label>
+                  <label className="text-[11px] font-bold text-agora-ink">Allergens</label>
                   <input
                     type="text"
                     placeholder="e.g. Nuts, Dairy"
                     value={attributes.allergens || ''}
                     onChange={(e) => handleAttrChange('allergens', e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-white"
+                    className="w-full bg-agora-card border border-agora-border rounded-xl px-2.5 py-1.5 text-xs text-agora-ink"
                   />
-                </div>
-              </div>
-            )}
-
-            {/* Custom Attributes Defined by User */}
-            {settings?.custom_attributes && settings.custom_attributes.length > 0 && (
-              <div className="space-y-2 pt-2 border-t border-slate-800">
-                <span className="text-[11px] font-semibold text-slate-400 block">Custom Defined Fields</span>
-                <div className="grid grid-cols-2 gap-2">
-                  {settings.custom_attributes.map((attr) => (
-                    <div key={attr.key}>
-                      <label className="text-[11px] font-semibold text-slate-300">{attr.label}</label>
-                      <input
-                        type={attr.type === 'number' ? 'number' : attr.type === 'date' ? 'date' : 'text'}
-                        value={attributes[attr.key] || ''}
-                        onChange={(e) => handleAttrChange(attr.key, e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-white"
-                      />
-                    </div>
-                  ))}
                 </div>
               </div>
             )}
           </div>
 
           {/* Buttons */}
-          <div className="flex items-center gap-3 pt-3">
+          <div className="flex items-center gap-3 pt-3 border-t border-agora-border">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-sm transition-all"
+              className="flex-1 py-3 bg-agora-bg hover:bg-agora-border text-agora-ink font-bold rounded-xl text-sm transition-all border border-agora-border"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold rounded-xl text-sm shadow-lg transition-all disabled:opacity-50"
+              className="flex-1 py-3 bg-agora-terracotta hover:bg-agora-terracotta-hover text-agora-card font-serif font-bold rounded-xl text-sm shadow-md transition-all disabled:opacity-50"
             >
               {isSubmitting ? 'Saving...' : productToEdit ? 'Save Changes' : 'Add to Catalog'}
             </button>

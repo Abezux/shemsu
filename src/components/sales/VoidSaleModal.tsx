@@ -44,31 +44,31 @@ export default function VoidSaleModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-rose-500/40 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-rose-950/30">
-          <div className="flex items-center gap-2 text-rose-400">
+    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-agora-card border border-agora-brick/40 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="px-6 py-4 border-b border-agora-border flex items-center justify-between bg-agora-brick/10">
+          <div className="flex items-center gap-2 text-agora-brick">
             <AlertTriangle className="w-5 h-5" />
-            <h3 className="font-bold text-lg">Void Sale {sale.sale_number}</h3>
+            <h3 className="font-serif font-bold text-lg">Void Sale {sale.sale_number}</h3>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-all"
+            className="text-agora-ink/60 hover:text-agora-ink p-1.5 rounded-xl hover:bg-agora-bg transition-all"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div className="bg-rose-950/20 border border-rose-500/30 rounded-2xl p-4 text-xs text-rose-300 space-y-1">
-            <p className="font-bold text-sm text-rose-200">Are you sure you want to void this sale?</p>
-            <p className="text-slate-400">
-              This action will mark the receipt as voided ({formatCurrency(sale.total_amount, currencySymbol)}) and <strong className="text-emerald-400">automatically restore inventory stock</strong> for all {sale.items_count} item(s).
+          <div className="bg-agora-brick/10 border border-agora-brick/20 rounded-2xl p-4 text-xs text-agora-ink/80 space-y-1">
+            <p className="font-bold text-sm text-agora-brick">Are you sure you want to void this sale?</p>
+            <p className="text-agora-ink/70">
+              This action will mark the receipt as voided (<span className="font-serif font-bold text-agora-ink">{formatCurrency(sale.total_amount, currencySymbol)}</span>) and <strong className="text-agora-sage">automatically restore inventory stock</strong> for all {sale.items_count} item(s).
             </p>
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-300">
+            <label className="text-xs font-semibold text-agora-ink/70">
               Reason for Voiding
             </label>
             <textarea
@@ -77,7 +77,7 @@ export default function VoidSaleModal({
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="Explain why this sale is being voided..."
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-rose-500"
+              className="w-full bg-agora-bg border border-agora-border rounded-xl p-3 text-xs text-agora-ink focus:outline-none focus:border-agora-brick"
             />
           </div>
 
@@ -85,14 +85,14 @@ export default function VoidSaleModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-sm transition-all"
+              className="flex-1 py-3 bg-agora-bg hover:bg-agora-border/40 text-agora-ink font-bold rounded-xl text-sm border border-agora-border transition-all"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 py-3 bg-rose-600 hover:bg-rose-500 text-white font-extrabold rounded-xl text-sm shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
+              className="flex-1 py-3 bg-agora-brick hover:bg-agora-brick/90 text-white font-extrabold rounded-xl text-sm shadow-md transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
             >
               <RotateCcw className="w-4 h-4" />
               {isSubmitting ? 'Voiding...' : 'Confirm Void'}

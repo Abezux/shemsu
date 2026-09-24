@@ -13,7 +13,6 @@ import {
   Edit3, 
   Trash2, 
   TrendingUp, 
-  PackageX,
   Layers,
   ShieldAlert,
   Calendar
@@ -22,7 +21,7 @@ import {
 export default function InventoryView() {
   const [products, setProducts] = useState<Product[]>([]);
   const [settings, setSettings] = useState<StoreSettings>({
-    store_name: 'Corner Kiosk',
+    store_name: 'Agora Kiosk',
     currency_symbol: '$',
     currency_code: 'USD',
     low_stock_alerts_enabled: true,
@@ -145,15 +144,15 @@ export default function InventoryView() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-agora-ink">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-100 tracking-tight flex items-center gap-2">
-            <Package className="w-7 h-7 text-emerald-400" />
+          <h1 className="text-2xl font-serif font-black text-agora-ink tracking-tight flex items-center gap-2">
+            <Package className="w-7 h-7 text-agora-terracotta" />
             Inventory & Stock Catalog
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-agora-ink-muted mt-0.5 font-medium">
             Manage product catalog, unit types, vertical attributes, and expiry date alerts
           </p>
         </div>
@@ -161,7 +160,7 @@ export default function InventoryView() {
         <div className="flex items-center gap-2">
           <button
             onClick={handleOpenAdd}
-            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl shadow-lg transition-all active:scale-95 text-xs sm:text-sm"
+            className="flex items-center gap-2 px-4 py-2.5 bg-agora-terracotta hover:bg-agora-terracotta-hover text-agora-card font-serif font-bold rounded-xl shadow-md transition-all active:scale-95 text-xs sm:text-sm"
           >
             <Plus className="w-4 h-4" /> Add New Product
           </button>
@@ -170,56 +169,56 @@ export default function InventoryView() {
 
       {/* KPI Cards Banner */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-semibold">
+        <div className="ledger-card p-4">
+          <div className="flex items-center justify-between text-agora-ink-muted text-xs font-bold">
             <span>Total Catalog Items</span>
-            <Layers className="w-4 h-4 text-emerald-400" />
+            <Layers className="w-4 h-4 text-agora-terracotta" />
           </div>
-          <div className="text-2xl font-black text-slate-100 mt-2">{products.length}</div>
-          <span className="text-[10px] text-slate-500">Active product SKUs</span>
+          <div className="text-2xl font-serif font-black text-agora-ink mt-2">{products.length}</div>
+          <span className="text-[10px] text-agora-ink-muted">Active product SKUs</span>
         </div>
 
-        <div className="bg-slate-900 border border-amber-500/30 rounded-2xl p-4">
-          <div className="flex items-center justify-between text-amber-400 text-xs font-semibold">
+        <div className="ledger-card p-4 border-agora-terracotta/40 bg-agora-terracotta-light/30">
+          <div className="flex items-center justify-between text-agora-terracotta text-xs font-bold">
             <span>Low Stock Items</span>
-            <AlertTriangle className="w-4 h-4 text-amber-400" />
+            <AlertTriangle className="w-4 h-4 text-agora-terracotta" />
           </div>
-          <div className="text-2xl font-black text-amber-300 mt-2">{lowStockCount}</div>
-          <span className="text-[10px] text-amber-500">Below threshold</span>
+          <div className="text-2xl font-serif font-black text-agora-terracotta mt-2">{lowStockCount}</div>
+          <span className="text-[10px] text-agora-terracotta font-semibold">Below threshold</span>
         </div>
 
-        <div className="bg-slate-900 border border-rose-500/30 rounded-2xl p-4">
-          <div className="flex items-center justify-between text-rose-400 text-xs font-semibold">
+        <div className="ledger-card p-4 border-agora-brick-border bg-agora-brick-light/30">
+          <div className="flex items-center justify-between text-agora-brick text-xs font-bold">
             <span>Expiring Soon</span>
-            <ShieldAlert className="w-4 h-4 text-rose-400" />
+            <ShieldAlert className="w-4 h-4 text-agora-brick" />
           </div>
-          <div className="text-2xl font-black text-rose-300 mt-2">{expiringCount}</div>
-          <span className="text-[10px] text-rose-500">Within {settings.expiry_alert_days || 30} days</span>
+          <div className="text-2xl font-serif font-black text-agora-brick mt-2">{expiringCount}</div>
+          <span className="text-[10px] text-agora-brick font-semibold">Within {settings.expiry_alert_days || 30} days</span>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-semibold">
+        <div className="ledger-card p-4">
+          <div className="flex items-center justify-between text-agora-ink-muted text-xs font-bold">
             <span>Stock Valuation</span>
-            <TrendingUp className="w-4 h-4 text-emerald-400" />
+            <TrendingUp className="w-4 h-4 text-agora-sage" />
           </div>
-          <div className="text-xl font-black text-emerald-400 mt-2 truncate">
+          <div className="text-xl font-serif font-black text-agora-sage mt-2 truncate">
             {formatCurrency(totalValuationCents, settings.currency_symbol)}
           </div>
-          <span className="text-[10px] text-slate-500">Total retail value</span>
+          <span className="text-[10px] text-agora-ink-muted">Total retail value</span>
         </div>
       </div>
 
       {/* Filter & Search Toolbar */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-md">
+      <div className="ledger-card p-4 space-y-3 shadow-sm">
         <div className="flex flex-col sm:flex-row items-center gap-3">
           <div className="relative flex-1 w-full">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-agora-ink-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by name, category, or batch number..."
-              className="w-full bg-slate-950 border border-slate-700/80 rounded-xl py-2 pl-9 pr-4 text-xs text-slate-100 focus:outline-none focus:border-emerald-500"
+              className="w-full bg-agora-bg border border-agora-border rounded-xl py-2 pl-9 pr-4 text-xs text-agora-ink focus:outline-none focus:border-agora-terracotta"
             />
           </div>
 
@@ -229,10 +228,10 @@ export default function InventoryView() {
                 setFilterLowStockOnly(!filterLowStockOnly);
                 setFilterExpiringOnly(false);
               }}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-all ${
                 filterLowStockOnly
-                  ? 'bg-amber-500/20 border-amber-500 text-amber-300'
-                  : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                  ? 'bg-agora-terracotta/15 border-agora-terracotta text-agora-terracotta'
+                  : 'bg-agora-card border-agora-border text-agora-ink-muted hover:text-agora-ink'
               }`}
             >
               <AlertTriangle className="w-3.5 h-3.5" />
@@ -244,13 +243,13 @@ export default function InventoryView() {
                 setFilterExpiringOnly(!filterExpiringOnly);
                 setFilterLowStockOnly(false);
               }}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-all ${
                 filterExpiringOnly
-                  ? 'bg-rose-500/20 border-rose-500 text-rose-300'
-                  : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                  ? 'bg-agora-brick-light border-agora-brick-border text-agora-brick'
+                  : 'bg-agora-card border-agora-border text-agora-ink-muted hover:text-agora-ink'
               }`}
             >
-              <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
+              <ShieldAlert className="w-3.5 h-3.5 text-agora-brick" />
               Expiring Soon ({expiringCount})
             </button>
           </div>
@@ -264,8 +263,8 @@ export default function InventoryView() {
               onClick={() => setSelectedCategory(cat)}
               className={`px-3 py-1 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
                 selectedCategory === cat
-                  ? 'bg-emerald-500 text-slate-950'
-                  : 'bg-slate-950/80 border border-slate-800 text-slate-400 hover:text-slate-200'
+                  ? 'bg-agora-terracotta text-agora-card'
+                  : 'bg-agora-card border border-agora-border text-agora-ink-muted hover:text-agora-ink'
               }`}
             >
               {cat}
@@ -274,11 +273,11 @@ export default function InventoryView() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+      {/* Table — Ledger Line Style */}
+      <div className="ledger-card overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-950 border-b border-slate-800 text-slate-400 uppercase tracking-wider font-bold">
+            <thead className="bg-agora-bg/80 border-b border-agora-border text-agora-ink-muted uppercase tracking-wider font-bold">
               <tr>
                 <th className="p-4">Product Name</th>
                 <th className="p-4">Category</th>
@@ -288,16 +287,16 @@ export default function InventoryView() {
                 <th className="p-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/80">
+            <tbody className="divide-y divide-agora-border">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-slate-500">
+                  <td colSpan={6} className="p-8 text-center text-agora-ink-muted">
                     Loading inventory catalog...
                   </td>
                 </tr>
               ) : filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-slate-500">
+                  <td colSpan={6} className="p-8 text-center text-agora-ink-muted">
                     No products found matching filters.
                   </td>
                 </tr>
@@ -311,23 +310,15 @@ export default function InventoryView() {
                   return (
                     <tr
                       key={p.id}
-                      className={`hover:bg-slate-800/40 transition-all ${
-                        isOut
-                          ? 'bg-rose-950/10'
-                          : isExpiring
-                          ? 'bg-rose-950/20'
-                          : isLow
-                          ? 'bg-amber-950/10'
-                          : ''
-                      }`}
+                      className="ledger-row"
                     >
-                      <td className="p-4 font-semibold text-slate-100">
-                        <div className="flex items-center gap-2">
+                      <td className="p-4 font-bold text-agora-ink">
+                        <div className="flex items-center gap-2.5">
                           <span className="text-xl">{p.image_url || '📦'}</span>
                           <div>
-                            <span className="block font-bold text-sm text-white">{p.name}</span>
+                            <span className="block font-bold text-sm text-agora-ink">{p.name}</span>
                             {p.cost_price && (
-                              <span className="text-[10px] text-slate-500">
+                              <span className="text-[10px] text-agora-ink-muted">
                                 Cost: {formatCurrency(p.cost_price, settings.currency_symbol)}
                               </span>
                             )}
@@ -336,21 +327,21 @@ export default function InventoryView() {
                       </td>
 
                       <td className="p-4">
-                        <span className="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-slate-300 font-medium text-[11px]">
+                        <span className="px-2.5 py-1 rounded-lg bg-agora-bg border border-agora-border text-agora-ink font-semibold text-[11px]">
                           {p.category}
                         </span>
                       </td>
 
-                      <td className="p-4 font-extrabold text-emerald-400 text-sm">
+                      <td className="p-4 font-serif font-bold text-agora-terracotta text-sm">
                         {formatCurrency(p.price, settings.currency_symbol)}
                       </td>
 
                       <td className="p-4">
                         <div className="flex items-center gap-1">
-                          <span className="font-black text-sm text-white">
+                          <span className="font-serif font-extrabold text-sm text-agora-ink">
                             {p.stock_quantity}
                           </span>
-                          <span className="text-[10px] font-semibold text-slate-400 uppercase">
+                          <span className="text-[10px] font-semibold text-agora-ink-muted uppercase">
                             {p.unit_type || 'pcs'}
                           </span>
                         </div>
@@ -361,8 +352,8 @@ export default function InventoryView() {
                           <span
                             className={`px-2 py-0.5 rounded-md text-[10px] font-bold inline-flex items-center gap-1 ${
                               isExpiring
-                                ? 'bg-rose-500/20 border border-rose-500/40 text-rose-300'
-                                : 'bg-slate-950 border border-slate-800 text-slate-400'
+                                ? 'bg-agora-brick-light border border-agora-brick-border text-agora-brick'
+                                : 'bg-agora-bg border border-agora-border text-agora-ink-muted'
                             }`}
                           >
                             <Calendar className="w-3 h-3" /> Exp: {expDate.toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
@@ -370,13 +361,13 @@ export default function InventoryView() {
                         )}
 
                         {p.attributes?.batch_no && (
-                          <span className="text-[10px] text-slate-400 block font-medium">
+                          <span className="text-[10px] text-agora-ink-muted block font-medium">
                             Batch: {String(p.attributes.batch_no)}
                           </span>
                         )}
 
                         {isLow && !isExpiring && (
-                          <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold inline-block">
+                          <span className="px-2 py-0.5 rounded-full bg-agora-terracotta-light text-agora-terracotta border border-agora-terracotta-border text-[10px] font-bold inline-block">
                             Low Stock (≤{p.low_stock_threshold})
                           </span>
                         )}
@@ -385,20 +376,20 @@ export default function InventoryView() {
                       <td className="p-4 text-right space-x-1">
                         <button
                           onClick={() => handleOpenRestock(p)}
-                          className="px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 font-bold rounded-lg border border-emerald-500/30 transition-all text-xs inline-flex items-center gap-1"
+                          className="px-3 py-1.5 bg-agora-terracotta/10 hover:bg-agora-terracotta/20 text-agora-terracotta font-bold rounded-lg border border-agora-terracotta/30 transition-all text-xs inline-flex items-center gap-1"
                         >
                           <PlusCircle className="w-3.5 h-3.5" /> Restock
                         </button>
                         <button
                           onClick={() => handleOpenEdit(p)}
-                          className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all"
+                          className="p-1.5 text-agora-ink-muted hover:text-agora-ink hover:bg-agora-bg rounded-lg transition-all"
                           title="Edit product"
                         >
                           <Edit3 className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDeleteProduct(p.id, p.name)}
-                          className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all"
+                          className="p-1.5 text-agora-brick/70 hover:text-agora-brick hover:bg-agora-brick-light rounded-lg transition-all"
                           title="Delete product"
                         >
                           <Trash2 className="w-4 h-4" />

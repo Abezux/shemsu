@@ -42,55 +42,55 @@ export default function AuditView() {
     switch (reason) {
       case 'SALE':
         return (
-          <span className="px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 text-[11px] font-bold border border-slate-700 flex items-center gap-1 w-max">
-            <ShoppingCart className="w-3 h-3 text-slate-400" /> Sale
+          <span className="px-2.5 py-1 rounded-full bg-agora-bg text-agora-ink text-[11px] font-bold border border-agora-border flex items-center gap-1 w-max">
+            <ShoppingCart className="w-3 h-3 text-agora-terracotta" /> Sale Entry
           </span>
         );
       case 'RESTOCK':
         return (
-          <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold flex items-center gap-1 w-max">
-            <PlusCircle className="w-3 h-3 text-emerald-400" /> Restock
+          <span className="px-2.5 py-1 rounded-full bg-agora-sage-light border border-agora-sage-border text-agora-sage text-[11px] font-bold flex items-center gap-1 w-max">
+            <PlusCircle className="w-3 h-3 text-agora-sage" /> Restock
           </span>
         );
       case 'VOID_SALE':
         return (
-          <span className="px-2.5 py-1 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-300 text-[11px] font-bold flex items-center gap-1 w-max">
-            <RotateCcw className="w-3 h-3 text-rose-400" /> Void Sale
+          <span className="px-2.5 py-1 rounded-full bg-agora-brick-light border border-agora-brick-border text-agora-brick text-[11px] font-bold flex items-center gap-1 w-max">
+            <RotateCcw className="w-3 h-3 text-agora-brick" /> Void Sale
           </span>
         );
       case 'MANUAL_ADJUSTMENT':
         return (
-          <span className="px-2.5 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[11px] font-bold flex items-center gap-1 w-max">
-            <Edit3 className="w-3 h-3 text-amber-400" /> Catalog Edit
+          <span className="px-2.5 py-1 rounded-full bg-agora-brass-light border border-agora-brass-border text-agora-brass text-[11px] font-bold flex items-center gap-1 w-max">
+            <Edit3 className="w-3 h-3 text-agora-brass" /> Catalog Edit
           </span>
         );
       default:
-        return <span className="text-slate-400">{reason}</span>;
+        return <span className="text-agora-ink-muted">{reason}</span>;
     }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-agora-ink">
       <div>
-        <h1 className="text-2xl font-black text-slate-100 tracking-tight flex items-center gap-2">
-          <FileText className="w-7 h-7 text-emerald-400" />
-          Stock Movement Audit Trail
+        <h1 className="text-2xl font-serif font-black text-agora-ink tracking-tight flex items-center gap-2">
+          <FileText className="w-7 h-7 text-agora-terracotta" />
+          Stock Movement Ledger Audit Log
         </h1>
-        <p className="text-xs text-slate-400 mt-1">
-          Complete immutable audit history of every stock change (sales, restocks, voided sales, and catalog edits)
+        <p className="text-xs text-agora-ink-muted mt-0.5 font-medium">
+          Complete immutable ledger history of every inventory movement (sales, restocks, voided entries, and catalog edits)
         </p>
       </div>
 
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-md">
+      <div className="ledger-card p-4 space-y-3 shadow-sm">
         <div className="flex flex-col sm:flex-row items-center gap-3">
           <div className="relative flex-1 w-full">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-agora-ink-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by product name, note, or reference ID..."
-              className="w-full bg-slate-950 border border-slate-700/80 rounded-xl py-2 pl-9 pr-4 text-xs text-slate-100 focus:outline-none focus:border-emerald-500"
+              className="w-full bg-agora-bg border border-agora-border rounded-xl py-2 pl-9 pr-4 text-xs text-agora-ink focus:outline-none focus:border-agora-terracotta"
             />
           </div>
 
@@ -107,8 +107,8 @@ export default function AuditView() {
                 onClick={() => setReasonFilter(f.id)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
                   reasonFilter === f.id
-                    ? 'bg-emerald-500 text-slate-950'
-                    : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200'
+                    ? 'bg-agora-terracotta text-agora-card'
+                    : 'bg-agora-card border border-agora-border text-agora-ink-muted hover:text-agora-ink'
                 }`}
               >
                 {f.label}
@@ -118,10 +118,11 @@ export default function AuditView() {
         </div>
       </div>
 
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+      {/* Ledger Line Style Table */}
+      <div className="ledger-card overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-950 border-b border-slate-800 text-slate-400 uppercase tracking-wider font-bold">
+            <thead className="bg-agora-bg/80 border-b border-agora-border text-agora-ink-muted uppercase tracking-wider font-bold">
               <tr>
                 <th className="p-4">Timestamp</th>
                 <th className="p-4">Product Name</th>
@@ -131,16 +132,16 @@ export default function AuditView() {
                 <th className="p-4">Note / Reference</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/80">
+            <tbody className="divide-y divide-agora-border">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-slate-500">
+                  <td colSpan={6} className="p-8 text-center text-agora-ink-muted">
                     Loading stock audit trail logs...
                   </td>
                 </tr>
               ) : filteredMovements.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-slate-500">
+                  <td colSpan={6} className="p-8 text-center text-agora-ink-muted">
                     No stock movements recorded.
                   </td>
                 </tr>
@@ -149,12 +150,12 @@ export default function AuditView() {
                   const isPositive = m.change_amount > 0;
 
                   return (
-                    <tr key={m.id} className="hover:bg-slate-800/40 transition-all">
-                      <td className="p-4 text-slate-400 font-medium whitespace-nowrap">
+                    <tr key={m.id} className="ledger-row">
+                      <td className="p-4 text-agora-ink-muted font-medium whitespace-nowrap">
                         {formatDate(m.timestamp)}
                       </td>
 
-                      <td className="p-4 font-bold text-slate-100 text-sm">
+                      <td className="p-4 font-bold text-agora-ink text-sm">
                         {m.product_name}
                       </td>
 
@@ -162,24 +163,24 @@ export default function AuditView() {
 
                       <td className="p-4">
                         <span
-                          className={`font-black text-sm inline-flex items-center gap-0.5 ${
-                            isPositive ? 'text-emerald-400' : 'text-rose-400'
+                          className={`font-serif font-bold text-sm inline-flex items-center gap-0.5 ${
+                            isPositive ? 'text-agora-sage' : 'text-agora-terracotta'
                           }`}
                         >
                           {isPositive ? (
-                            <ArrowUpRight className="w-4 h-4 text-emerald-400" />
+                            <ArrowUpRight className="w-4 h-4 text-agora-sage" />
                           ) : (
-                            <ArrowDownRight className="w-4 h-4 text-rose-400" />
+                            <ArrowDownRight className="w-4 h-4 text-agora-terracotta" />
                           )}
                           {isPositive ? `+${m.change_amount}` : m.change_amount} units
                         </span>
                       </td>
 
-                      <td className="p-4 font-bold text-slate-200">
+                      <td className="p-4 font-serif font-bold text-agora-ink">
                         {m.quantity_after} units
                       </td>
 
-                      <td className="p-4 text-slate-400 max-w-xs truncate">
+                      <td className="p-4 text-agora-ink-muted max-w-xs truncate font-medium">
                         {m.note || '-'}
                       </td>
                     </tr>

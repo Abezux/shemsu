@@ -10,7 +10,7 @@ import { History, Receipt, CheckCircle, Ban, Search, DollarSign } from 'lucide-r
 export default function SalesView() {
   const [sales, setSales] = useState<Sale[]>([]);
   const [settings, setSettings] = useState<StoreSettings>({
-    store_name: 'Corner Kiosk',
+    store_name: 'Agora Kiosk',
     currency_symbol: '$',
     currency_code: 'USD',
     low_stock_alerts_enabled: true,
@@ -101,60 +101,60 @@ export default function SalesView() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-agora-ink">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-100 tracking-tight flex items-center gap-2">
-            <History className="w-7 h-7 text-emerald-400" />
-            Sales History & Receipt Log
+          <h1 className="text-2xl font-serif font-black text-agora-ink tracking-tight flex items-center gap-2">
+            <History className="w-7 h-7 text-agora-terracotta" />
+            Sales Ledger & Receipts Log
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Review completed transactions, inspect items sold, and easily void sales to restore inventory stock
+          <p className="text-xs text-agora-ink-muted mt-0.5 font-medium">
+            Review completed sales entries, inspect itemized totals, and void sales entries to restore stock
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-semibold">
+        <div className="ledger-card p-4">
+          <div className="flex items-center justify-between text-agora-ink-muted text-xs font-bold">
             <span>Period Revenue ({dateFilter})</span>
-            <DollarSign className="w-4 h-4 text-emerald-400" />
+            <DollarSign className="w-4 h-4 text-agora-terracotta" />
           </div>
-          <div className="text-2xl font-black text-emerald-400 mt-2">
+          <div className="text-2xl font-serif font-black text-agora-terracotta mt-2">
             {formatCurrency(totalCompletedRevenueCents, settings.currency_symbol)}
           </div>
-          <span className="text-[10px] text-slate-500">Total cleared sales value</span>
+          <span className="text-[10px] text-agora-ink-muted">Total cleared ledger value</span>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-semibold">
+        <div className="ledger-card p-4">
+          <div className="flex items-center justify-between text-agora-ink-muted text-xs font-bold">
             <span>Completed Transactions</span>
-            <CheckCircle className="w-4 h-4 text-emerald-400" />
+            <CheckCircle className="w-4 h-4 text-agora-sage" />
           </div>
-          <div className="text-2xl font-black text-slate-100 mt-2">{completedSalesCount}</div>
-          <span className="text-[10px] text-slate-500">Successful checkouts</span>
+          <div className="text-2xl font-serif font-black text-agora-ink mt-2">{completedSalesCount}</div>
+          <span className="text-[10px] text-agora-ink-muted">Successful sales entries</span>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-semibold">
+        <div className="ledger-card p-4 border-agora-brick-border bg-agora-brick-light/30">
+          <div className="flex items-center justify-between text-agora-brick text-xs font-bold">
             <span>Voided Sales</span>
-            <Ban className="w-4 h-4 text-rose-400" />
+            <Ban className="w-4 h-4 text-agora-brick" />
           </div>
-          <div className="text-2xl font-black text-rose-300 mt-2">{voidedSalesCount}</div>
-          <span className="text-[10px] text-slate-500">Stock restored for voided items</span>
+          <div className="text-2xl font-serif font-black text-agora-brick mt-2">{voidedSalesCount}</div>
+          <span className="text-[10px] text-agora-brick font-semibold">Stock restored for voided sales</span>
         </div>
       </div>
 
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-md">
+      <div className="ledger-card p-4 space-y-3 shadow-sm">
         <div className="flex flex-col sm:flex-row items-center gap-3">
           <div className="relative flex-1 w-full">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-agora-ink-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by receipt #, payment method, or item name..."
-              className="w-full bg-slate-950 border border-slate-700/80 rounded-xl py-2 pl-9 pr-4 text-xs text-slate-100 focus:outline-none focus:border-emerald-500"
+              className="w-full bg-agora-bg border border-agora-border rounded-xl py-2 pl-9 pr-4 text-xs text-agora-ink focus:outline-none focus:border-agora-terracotta"
             />
           </div>
 
@@ -170,8 +170,8 @@ export default function SalesView() {
                 onClick={() => setDateFilter(f.id as any)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
                   dateFilter === f.id
-                    ? 'bg-emerald-500 text-slate-950'
-                    : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200'
+                    ? 'bg-agora-terracotta text-agora-card'
+                    : 'bg-agora-card border border-agora-border text-agora-ink-muted hover:text-agora-ink'
                 }`}
               >
                 {f.label}
@@ -181,10 +181,11 @@ export default function SalesView() {
         </div>
       </div>
 
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+      {/* Ledger Line Style Table */}
+      <div className="ledger-card overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-950 border-b border-slate-800 text-slate-400 uppercase tracking-wider font-bold">
+            <thead className="bg-agora-bg/80 border-b border-agora-border text-agora-ink-muted uppercase tracking-wider font-bold">
               <tr>
                 <th className="p-4">Receipt #</th>
                 <th className="p-4">Date & Time</th>
@@ -195,16 +196,16 @@ export default function SalesView() {
                 <th className="p-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/80">
+            <tbody className="divide-y divide-agora-border">
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-slate-500">
+                  <td colSpan={7} className="p-8 text-center text-agora-ink-muted">
                     Loading sales records...
                   </td>
                 </tr>
               ) : filteredSales.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-slate-500">
+                  <td colSpan={7} className="p-8 text-center text-agora-ink-muted">
                     No sales recorded for this date filter.
                   </td>
                 </tr>
@@ -215,41 +216,39 @@ export default function SalesView() {
                   return (
                     <tr
                       key={sale.id}
-                      className={`hover:bg-slate-800/40 transition-all ${
-                        isVoided ? 'bg-rose-950/10 opacity-70' : ''
-                      }`}
+                      className={`ledger-row ${isVoided ? 'opacity-65 bg-agora-brick-light/20' : ''}`}
                     >
-                      <td className="p-4 font-bold text-slate-100 flex items-center gap-2">
-                        <Receipt className="w-4 h-4 text-emerald-400" />
+                      <td className="p-4 font-serif font-bold text-agora-ink flex items-center gap-2">
+                        <Receipt className="w-4 h-4 text-agora-terracotta" />
                         {sale.sale_number}
                       </td>
 
-                      <td className="p-4 text-slate-300">
+                      <td className="p-4 text-agora-ink-muted font-medium">
                         {formatDate(sale.timestamp)}
                       </td>
 
                       <td className="p-4">
-                        <span className="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-slate-300 font-semibold text-[11px]">
+                        <span className="px-2.5 py-1 rounded-lg bg-agora-bg border border-agora-border text-agora-ink font-semibold text-[11px]">
                           {sale.payment_method || 'CASH'}
                         </span>
                       </td>
 
-                      <td className="p-4 font-medium text-slate-300">
+                      <td className="p-4 font-semibold text-agora-ink">
                         {sale.items_count} item(s)
                       </td>
 
-                      <td className="p-4 font-black text-emerald-400 text-sm">
+                      <td className="p-4 font-serif font-bold text-agora-terracotta text-sm">
                         {formatCurrency(sale.total_amount, settings.currency_symbol)}
                       </td>
 
                       <td className="p-4">
                         {isVoided ? (
-                          <span className="px-2.5 py-1 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-300 text-[11px] font-bold inline-flex items-center gap-1">
-                            <Ban className="w-3 h-3 text-rose-400" /> Voided
+                          <span className="px-2.5 py-1 rounded-full bg-agora-brick-light border border-agora-brick-border text-agora-brick text-[11px] font-bold inline-flex items-center gap-1">
+                            <Ban className="w-3 h-3" /> Voided
                           </span>
                         ) : (
-                          <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold inline-flex items-center gap-1">
-                            <CheckCircle className="w-3 h-3 text-emerald-400" /> Completed
+                          <span className="px-2.5 py-1 rounded-full bg-agora-sage-light border border-agora-sage-border text-agora-sage text-[11px] font-bold inline-flex items-center gap-1">
+                            <CheckCircle className="w-3 h-3" /> Completed
                           </span>
                         )}
                       </td>
@@ -257,7 +256,7 @@ export default function SalesView() {
                       <td className="p-4 text-right space-x-1">
                         <button
                           onClick={() => handleOpenDetail(sale)}
-                          className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-lg border border-slate-700 transition-all text-xs"
+                          className="px-3 py-1.5 bg-agora-bg hover:bg-agora-border text-agora-ink font-bold rounded-lg border border-agora-border transition-all text-xs"
                         >
                           View Detail
                         </button>
