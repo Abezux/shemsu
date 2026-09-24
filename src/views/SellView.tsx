@@ -32,7 +32,7 @@ export default function SellView() {
       setProducts(prods);
       setSettings(stgs);
     } catch (err) {
-      console.error('Error loading register data:', err);
+      console.error('Error loading data:', err);
     } finally {
       setIsLoading(false);
     }
@@ -74,7 +74,7 @@ export default function SellView() {
       const existing = prevCart.find((item) => item.product.id === product.id);
       if (existing) {
         if (existing.quantity >= product.stock_quantity) {
-          showWarning(`Cannot add more than available stock (${product.stock_quantity} ${product.unit_type || 'units'})`);
+          showWarning(`Max stock reached (${product.stock_quantity} available)`);
           return prevCart;
         }
         return prevCart.map((item) =>
@@ -95,7 +95,7 @@ export default function SellView() {
             const newQty = item.quantity + delta;
             if (newQty <= 0) return null;
             if (newQty > item.product.stock_quantity) {
-              showWarning(`Stock limit reached (${item.product.stock_quantity} available)`);
+              showWarning(`Max stock reached (${item.product.stock_quantity} available)`);
               return item;
             }
             return { ...item, quantity: newQty };
@@ -135,10 +135,11 @@ export default function SellView() {
   );
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 h-full">
-      <div className="lg:col-span-8 flex flex-col space-y-4">
+    <div className="h-full flex flex-col lg:flex-row gap-4 sm:gap-5 overflow-hidden">
+      {/* Products Area (Left) — Filter fixed at top, Grid scrolls internally */}
+      <div className="flex-1 flex flex-col space-y-3 sm:space-y-4 min-w-0 h-full overflow-hidden">
         {warningMessage && (
-          <div className="bg-agora-brick-light border border-agora-brick-border text-agora-brick px-4 py-2.5 rounded-2xl flex items-center justify-between text-xs font-semibold animate-in fade-in">
+          <div className="bg-agora-brick-light border border-agora-brick-border text-agora-brick px-3 py-2 rounded-xl flex items-center justify-between text-xs font-semibold shrink-0">
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-agora-brick shrink-0" />
               <span>{warningMessage}</span>
@@ -149,16 +150,17 @@ export default function SellView() {
           </div>
         )}
 
-        <div className="ledger-card p-4 space-y-3 shadow-sm">
-          <div className="flex flex-col sm:flex-row items-center gap-3">
+        {/* Filter & Search Toolbar (Fixed Top) */}
+        <div className="ledger-card p-3 sm:p-4 space-y-3 shadow-sm shrink-0">
+          <div className="flex flex-col sm:flex-row items-center gap-2.5">
             <div className="relative flex-1 w-full">
               <Search className="w-4 h-4 text-agora-ink-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search products by name or category..."
-                className="w-full bg-agora-bg border border-agora-border rounded-xl py-2 pl-9 pr-4 text-sm text-agora-ink placeholder:text-agora-ink-muted/80 focus:outline-none focus:border-agora-terracotta"
+                placeholder="Search products..."
+                className="w-full bg-agora-bg border border-agora-border rounded-xl py-2 pl-9 pr-4 text-xs sm:text-sm text-agora-ink placeholder:text-agora-ink-muted/80 focus:outline-none focus:border-agora-terracotta"
               />
             </div>
 
@@ -166,7 +168,7 @@ export default function SellView() {
               <button
                 type="button"
                 onClick={() => setShowLowStockOnly(!showLowStockOnly)}
-                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-bold transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-all ${
                   showLowStockOnly
                     ? 'bg-agora-terracotta/15 border-agora-terracotta text-agora-terracotta'
                     : 'bg-agora-card border-agora-border text-agora-ink-muted hover:text-agora-ink'
@@ -180,19 +182,19 @@ export default function SellView() {
                 type="button"
                 onClick={loadData}
                 className="p-2 rounded-xl bg-agora-card border border-agora-border text-agora-ink-muted hover:text-agora-ink transition-all"
-                title="Refresh catalog"
+                title="Refresh products"
               >
                 <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
               </button>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
             {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
                   selectedCategory === cat
                     ? 'bg-agora-terracotta text-agora-card shadow-sm'
                     : 'bg-agora-card border border-agora-border text-agora-ink-muted hover:text-agora-ink hover:bg-agora-bg'
@@ -204,23 +206,24 @@ export default function SellView() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto min-h-[350px]">
+        {/* Product Catalog Grid (Scrolls internally when catalog has 30+ items) */}
+        <div className="flex-1 overflow-y-auto pr-1 min-h-0">
           {isLoading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 animate-pulse">
+            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3 animate-pulse">
               {[...Array(8)].map((_, i) => (
-                <div key={i} className="h-36 bg-agora-card rounded-2xl border border-agora-border"></div>
+                <div key={i} className="h-32 sm:h-36 bg-agora-card rounded-xl sm:rounded-2xl border border-agora-border"></div>
               ))}
             </div>
           ) : filteredProducts.length === 0 ? (
-            <div className="ledger-card p-10 text-center text-agora-ink-muted space-y-3">
+            <div className="ledger-card p-8 sm:p-10 text-center text-agora-ink-muted space-y-3">
               <div className="w-12 h-12 rounded-full bg-agora-bg border border-agora-border flex items-center justify-center mx-auto text-agora-brass">
                 <ShoppingCart className="w-6 h-6" />
               </div>
-              <h3 className="font-serif font-bold text-agora-ink text-lg">No matching catalog items</h3>
+              <h3 className="font-serif font-bold text-agora-ink text-base sm:text-lg">No products found</h3>
               <p className="text-xs text-agora-ink-muted max-w-xs mx-auto">
                 {products.length === 0
-                  ? 'Your shop catalog is currently empty. Click "Load Demo Catalog" in the top bar to seed demo items.'
-                  : 'Try clearing your search query or selecting a different category.'}
+                  ? 'Your catalog is empty. Click "Load Samples" in top bar.'
+                  : 'Try clearing your search query or choosing a different category.'}
               </p>
               {products.length === 0 && (
                 <button
@@ -230,13 +233,13 @@ export default function SellView() {
                   }}
                   className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-agora-terracotta text-agora-card text-xs font-serif font-bold rounded-xl shadow-md"
                 >
-                  <Sparkles className="w-4 h-4" /> Load Sample Demo Catalog
+                  <Sparkles className="w-4 h-4" /> Load Sample Products
                 </button>
               )}
             </div>
           ) : (
-            /* Tactile Tap Card Grid for Product Selection */
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            /* Tactile Product Grid */
+            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3 pb-4">
               {filteredProducts.map((product) => {
                 const cartItem = cart.find((i) => i.product.id === product.id);
                 return (
@@ -254,7 +257,8 @@ export default function SellView() {
         </div>
       </div>
 
-      <div className="lg:col-span-4 flex flex-col h-[600px] lg:h-auto">
+      {/* Cart Drawer (Right) — Pinned Fixed Height Viewport Column */}
+      <div className="w-full lg:w-80 xl:w-96 shrink-0 h-[460px] lg:h-full flex flex-col">
         <CartDrawer
           cart={cart}
           currencySymbol={settings.currency_symbol}

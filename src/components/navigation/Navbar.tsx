@@ -9,7 +9,12 @@ import {
   Wifi,
   Settings,
   LogOut,
-  User
+  User,
+  Store,
+  ShoppingBag,
+  Pill,
+  UtensilsCrossed,
+  Scissors
 } from 'lucide-react';
 import { api } from '@/services/api';
 import { StoreSettings } from '@/types';
@@ -22,13 +27,57 @@ interface NavbarProps {
   onNavigate: (tab: string) => void;
 }
 
-const BUSINESS_TYPE_BADGES: Record<string, { label: string; icon: string }> = {
-  MINI_SHOP: { label: 'Mini-Shop', icon: '🛒' },
-  PHARMACY: { label: 'Pharmacy', icon: '💊' },
-  RESTAURANT: { label: 'Restaurant', icon: '🍔' },
-  SALON: { label: 'Salon', icon: '✂️' },
-  GENERAL_RETAIL: { label: 'Retail POS', icon: '🏬' },
+const BUSINESS_TYPE_BADGES: Record<string, { label: string; icon: React.ElementType }> = {
+  MINI_SHOP: { label: 'Mini-Shop', icon: ShoppingBag },
+  PHARMACY: { label: 'Pharmacy', icon: Pill },
+  RESTAURANT: { label: 'Restaurant', icon: UtensilsCrossed },
+  SALON: { label: 'Salon', icon: Scissors },
+  GENERAL_RETAIL: { label: 'Retail', icon: Store },
 };
+
+export const navLinks = [
+  { id: 'sell', label: 'Sell', icon: ShoppingCart },
+  { id: 'inventory', label: 'Products', icon: Package },
+  { id: 'sales', label: 'Sales', icon: History },
+  { id: 'audit', label: 'Activity', icon: FileText },
+  { id: 'analytics', label: 'Reports', icon: BarChart3 },
+];
+
+export function Sidebar({ activeTab, onNavigate }: NavbarProps) {
+  return (
+    <aside className="hidden md:flex flex-col w-56 shrink-0 bg-agora-card border-r border-agora-border p-3 justify-between h-[calc(100vh-65px)] sticky top-[65px]">
+      <div className="space-y-1">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-agora-ink-muted px-3 block mb-2">
+          Navigation
+        </span>
+        {navLinks.map((link) => {
+          const Icon = link.icon;
+          const isActive = activeTab === link.id;
+          return (
+            <button
+              key={link.id}
+              onClick={() => onNavigate(link.id)}
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-sm font-semibold rounded-xl transition-all ${
+                isActive
+                  ? 'bg-agora-terracotta text-agora-card font-serif font-bold shadow-sm'
+                  : 'text-agora-ink-muted hover:text-agora-ink hover:bg-agora-bg'
+              }`}
+            >
+              <Icon className={`w-4 h-4 ${isActive ? 'text-agora-card' : 'text-agora-ink-muted'}`} />
+              <span>{link.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="pt-3 border-t border-agora-border text-center">
+        <span className="text-[10px] font-bold text-agora-brass uppercase tracking-widest block">
+          Agora Digital Ledger
+        </span>
+      </div>
+    </aside>
+  );
+}
 
 export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
   const { user, store, signOut, refreshStore } = useAuth();
@@ -65,13 +114,13 @@ export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
   }, [store]);
 
   const handleSeed = async () => {
-    if (confirm('Load pre-populated demo kiosk catalog (drinks, snacks, groceries, medicines)? This will refresh catalog.')) {
+    if (confirm('Load sample products into catalog? This will refresh your product list.')) {
       setIsSeeding(true);
       try {
         await api.seedDemo();
         window.location.reload();
       } catch (err) {
-        alert('Error seeding catalog: ' + err);
+        alert('Error loading sample products: ' + err);
       } finally {
         setIsSeeding(false);
       }
@@ -86,33 +135,26 @@ export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
   };
 
   const badge = BUSINESS_TYPE_BADGES[settings.business_type || 'GENERAL_RETAIL'] || BUSINESS_TYPE_BADGES.GENERAL_RETAIL;
-
-  const navLinks = [
-    { id: 'sell', label: 'Sell Register', icon: ShoppingCart },
-    { id: 'inventory', label: 'Products & Stock', icon: Package },
-    { id: 'sales', label: 'Sales History', icon: History },
-    { id: 'audit', label: 'Stock Audit', icon: FileText },
-    { id: 'analytics', label: 'Daily Summary', icon: BarChart3 },
-  ];
+  const BadgeIcon = badge.icon;
 
   return (
     <>
-      {/* Top Bar (Desktop & Mobile Header) */}
-      <header className="sticky top-0 z-30 bg-agora-card border-b border-agora-border text-agora-ink shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      {/* Top Header Bar */}
+      <header className="sticky top-0 z-30 bg-agora-card border-b border-agora-border text-agora-ink shadow-sm h-[65px] flex items-center">
+        <div className="w-full mx-auto px-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <AgoraLogo size="md" />
             
-            <div className="hidden sm:block h-8 w-[1px] bg-agora-border mx-1" />
+            <div className="hidden sm:block h-7 w-[1px] bg-agora-border mx-1" />
 
             <div>
               <h1 className="font-serif font-bold text-base tracking-tight leading-tight flex items-center gap-2 text-agora-ink">
-                {settings.store_name}
-                <span className="text-xs font-sans font-semibold px-2 py-0.5 rounded-full bg-agora-brass/10 text-agora-brass border border-agora-brass/30 flex items-center gap-1">
-                  <span>{badge.icon}</span> {badge.label}
+                <span className="truncate max-w-[140px] sm:max-w-none">{settings.store_name}</span>
+                <span className="text-xs font-sans font-semibold px-2 py-0.5 rounded-full bg-agora-brass/10 text-agora-brass border border-agora-brass/30 flex items-center gap-1 shrink-0">
+                  <BadgeIcon className="w-3 h-3 text-agora-brass" /> {badge.label}
                 </span>
               </h1>
-              <div className="flex items-center gap-3 text-xs text-agora-ink-muted mt-0.5">
+              <div className="flex items-center gap-2 text-xs text-agora-ink-muted mt-0.5">
                 <span className="flex items-center gap-1 text-agora-sage font-medium">
                   <Wifi className="w-3 h-3 text-agora-sage" />
                   <span>Cloud Active</span>
@@ -120,9 +162,9 @@ export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
                 {user?.email && (
                   <>
                     <span>•</span>
-                    <span className="flex items-center gap-1 text-agora-ink-muted">
+                    <span className="hidden sm:flex items-center gap-1 text-agora-ink-muted">
                       <User className="w-3 h-3 text-agora-brass" />
-                      <span className="truncate max-w-[140px] sm:max-w-none">{user.email}</span>
+                      <span className="truncate max-w-[160px]">{user.email}</span>
                     </span>
                   </>
                 )}
@@ -137,17 +179,17 @@ export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
               onClick={handleSeed}
               disabled={isSeeding}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-agora-terracotta/10 hover:bg-agora-terracotta/20 border border-agora-terracotta/30 text-agora-terracotta text-xs font-bold transition-all active:scale-95 disabled:opacity-50"
-              title="Load demo kiosk products"
+              title="Load sample products"
             >
               <Sparkles className="w-3.5 h-3.5 text-agora-terracotta" />
-              <span className="hidden sm:inline">{isSeeding ? 'Seeding...' : 'Load Demo Catalog'}</span>
-              <span className="sm:hidden">Demo</span>
+              <span className="hidden sm:inline">{isSeeding ? 'Seeding...' : 'Load Samples'}</span>
+              <span className="sm:hidden">Samples</span>
             </button>
 
             <button
               onClick={() => setIsSettingsOpen(true)}
               className="p-2 rounded-xl bg-agora-brass/10 hover:bg-agora-brass/20 text-agora-brass border border-agora-brass/30 transition-all"
-              title="Store settings & Business Vertical"
+              title="Store settings"
             >
               <Settings className="w-4 h-4 text-agora-brass" />
             </button>
@@ -155,34 +197,10 @@ export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
             <button
               onClick={() => signOut()}
               className="p-2 rounded-xl bg-agora-brick/10 hover:bg-agora-brick/20 text-agora-brick border border-agora-brick/30 transition-all"
-              title="Sign Out of Agora"
+              title="Sign Out"
             >
               <LogOut className="w-4 h-4 text-agora-brick" />
             </button>
-          </div>
-        </div>
-
-        {/* Desktop Navigation Tabs */}
-        <div className="hidden md:block bg-agora-bg/60 border-t border-agora-border">
-          <div className="max-w-7xl mx-auto px-4 flex gap-1">
-            {navLinks.map((link) => {
-              const Icon = link.icon;
-              const isActive = activeTab === link.id;
-              return (
-                <button
-                  key={link.id}
-                  onClick={() => onNavigate(link.id)}
-                  className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition-all ${
-                    isActive
-                      ? 'border-agora-terracotta text-agora-terracotta bg-agora-terracotta/10'
-                      : 'border-transparent text-agora-ink-muted hover:text-agora-ink hover:bg-agora-card/60'
-                  }`}
-                >
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-agora-terracotta' : 'text-agora-ink-muted'}`} />
-                  {link.label}
-                </button>
-              );
-            })}
           </div>
         </div>
       </header>
@@ -204,7 +222,7 @@ export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
                 }`}
               >
                 <Icon className={`w-5 h-5 mb-1 ${isActive ? 'text-agora-terracotta' : 'text-agora-ink-muted'}`} />
-                <span className="text-[10px] leading-tight truncate w-full">{link.label.split(' ')[0]}</span>
+                <span className="text-[10px] leading-tight truncate w-full">{link.label}</span>
               </button>
             );
           })}

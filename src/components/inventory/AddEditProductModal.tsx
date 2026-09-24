@@ -3,6 +3,7 @@ import { Product, ProductCategory, UnitType, StoreSettings } from '@/types';
 import { parseInputToCents, centsToDecimalString } from '@/utils/currency';
 import { api } from '@/services/api';
 import { X, Package, AlertCircle } from 'lucide-react';
+import ProductAvatar from '@/components/common/ProductAvatar';
 
 interface AddEditProductModalProps {
   isOpen: boolean;
@@ -30,8 +31,6 @@ const UNIT_TYPES: { id: UnitType; label: string }[] = [
   { id: 'ml', label: 'Milliliters (ml)' },
 ];
 
-const EMOJI_ICONS = ['🥤', '💧', '🧃', '🥔', '🍫', '🍞', '🌾', '🥛', '🧼', '🪥', '💊', '🧴', '🖊️', '📓', '📦', '🍎', '🍌', '🍔', '✂️'];
-
 export default function AddEditProductModal({
   isOpen,
   productToEdit,
@@ -46,7 +45,7 @@ export default function AddEditProductModal({
   const [stockQuantity, setStockQuantity] = useState<number>(10);
   const [lowStockThreshold, setLowStockThreshold] = useState<number>(5);
   const [unitType, setUnitType] = useState<UnitType>('piece');
-  const [imageUrl, setImageUrl] = useState<string>('📦');
+  const [imageUrl, setImageUrl] = useState<string>('');
   const [attributes, setAttributes] = useState<Record<string, any>>({});
   const [settings, setSettings] = useState<StoreSettings | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -63,7 +62,7 @@ export default function AddEditProductModal({
         setStockQuantity(productToEdit.stock_quantity);
         setLowStockThreshold(productToEdit.low_stock_threshold);
         setUnitType(productToEdit.unit_type || 'piece');
-        setImageUrl(productToEdit.image_url || '📦');
+        setImageUrl(productToEdit.image_url || '');
         setAttributes(productToEdit.attributes || {});
       } else {
         setName('');
@@ -73,7 +72,7 @@ export default function AddEditProductModal({
         setStockQuantity(10);
         setLowStockThreshold(5);
         setUnitType('piece');
-        setImageUrl('📦');
+        setImageUrl('');
         setAttributes({});
       }
       setIsSubmitting(false);
@@ -110,7 +109,7 @@ export default function AddEditProductModal({
         low_stock_threshold: lowStockThreshold,
         unit_type: unitType,
         attributes,
-        image_url: imageUrl,
+        image_url: imageUrl.trim(),
       });
       onClose();
     } catch (err: any) {
@@ -129,7 +128,7 @@ export default function AddEditProductModal({
           <div className="flex items-center gap-2">
             <Package className="w-5 h-5 text-agora-terracotta" />
             <h3 className="font-serif font-bold text-agora-ink text-lg">
-              {productToEdit ? 'Edit Catalog Item' : 'Add New Product'}
+              {productToEdit ? 'Edit Product' : 'Add Product'}
             </h3>
           </div>
           <button
@@ -141,21 +140,11 @@ export default function AddEditProductModal({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
-          {/* Name & Icon */}
+          {/* Name & Avatar Preview */}
           <div className="space-y-1">
             <label className="text-xs font-bold text-agora-ink">Product Name</label>
-            <div className="flex gap-2">
-              <select
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                className="bg-agora-bg border border-agora-border rounded-xl px-2 text-xl focus:outline-none"
-              >
-                {EMOJI_ICONS.map((emoji) => (
-                  <option key={emoji} value={emoji}>
-                    {emoji}
-                  </option>
-                ))}
-              </select>
+            <div className="flex items-center gap-2.5">
+              <ProductAvatar name={name || 'P'} imageUrl={imageUrl} size="md" />
               <input
                 type="text"
                 required

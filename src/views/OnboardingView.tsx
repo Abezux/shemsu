@@ -3,14 +3,14 @@ import { useAuth } from '@/context/AuthContext';
 import { BusinessType } from '@/types';
 import { CURRENCY_PRESETS } from '@/utils/currency';
 import { api } from '@/services/api';
-import { Sparkles, ArrowRight, CheckCircle2, Package } from 'lucide-react';
+import { Sparkles, ArrowRight, CheckCircle2, Package, Store, ShoppingBag, Pill, UtensilsCrossed, Scissors } from 'lucide-react';
 
-const BUSINESS_TYPES: { id: BusinessType; name: string; icon: string; desc: string }[] = [
-  { id: 'GENERAL_RETAIL', name: 'General Retail', icon: '🏬', desc: 'Standard retail shop catalog' },
-  { id: 'MINI_SHOP', name: 'Mini-Shop / Kiosk', icon: '🛒', desc: 'Fast counter sales for snacks & drinks' },
-  { id: 'PHARMACY', name: 'Pharmacy / Drugstore', icon: '💊', desc: 'Tracks expiry dates, batch numbers & prescriptions' },
-  { id: 'RESTAURANT', name: 'Restaurant / Food Stall', icon: '🍔', desc: 'Tracks prep times, ingredients & unit measures' },
-  { id: 'SALON', name: 'Salon & Services', icon: '✂️', desc: 'Tracks service duration & beauty products' },
+const BUSINESS_TYPES: { id: BusinessType; name: string; icon: React.ElementType; desc: string }[] = [
+  { id: 'GENERAL_RETAIL', name: 'General Retail', icon: Store, desc: 'Standard shop catalog' },
+  { id: 'MINI_SHOP', name: 'Mini-Shop / Kiosk', icon: ShoppingBag, desc: 'Snacks, drinks & counter items' },
+  { id: 'PHARMACY', name: 'Pharmacy / Drugstore', icon: Pill, desc: 'Expiry dates, batch numbers & Rx' },
+  { id: 'RESTAURANT', name: 'Restaurant / Food Stall', icon: UtensilsCrossed, desc: 'Prep times & ingredients' },
+  { id: 'SALON', name: 'Salon & Services', icon: Scissors, desc: 'Services & beauty products' },
 ];
 
 export default function OnboardingView() {
@@ -58,7 +58,7 @@ export default function OnboardingView() {
 
       window.location.reload();
     } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to complete onboarding setup');
+      setErrorMsg(err.message || 'Failed to complete setup');
     } finally {
       setIsSubmitting(false);
     }
@@ -75,10 +75,10 @@ export default function OnboardingView() {
             </div>
             <div>
               <h2 className="font-serif font-bold text-agora-ink text-lg">
-                {step === 1 ? 'Step 1: Store & Ledger Setup' : 'Step 2: Catalog Initialization'}
+                {step === 1 ? 'Step 1: Store Setup' : 'Step 2: Product Catalog'}
               </h2>
               <span className="text-xs text-agora-ink-muted font-medium">
-                {step === 1 ? 'Configure your store name, business vertical & currency' : 'Choose how to start your product catalog'}
+                {step === 1 ? 'Configure store name, business type & currency' : 'Choose how to start your product catalog'}
               </span>
             </div>
           </div>
@@ -93,28 +93,29 @@ export default function OnboardingView() {
           </div>
         )}
 
-        {/* STEP 1: STORE & VERTICAL CONFIGURATION */}
+        {/* STEP 1 */}
         {step === 1 ? (
           <form onSubmit={handleStep1Submit} className="space-y-5">
             <div className="space-y-1">
-              <label className="text-xs font-bold text-agora-ink">Store / Shop Name</label>
+              <label className="text-xs font-bold text-agora-ink">Store Name</label>
               <input
                 type="text"
                 required
                 value={storeName}
                 onChange={(e) => setStoreName(e.target.value)}
-                placeholder="e.g. Corner Mini-Market or City Pharmacy"
-                className="w-full bg-agora-bg border border-agora-border rounded-xl py-2.5 px-3 text-sm text-agora-ink placeholder-agora-ink-muted/60 focus:outline-none focus:border-agora-terracotta"
+                placeholder="e.g. Corner Shop"
+                className="w-full bg-agora-bg border border-agora-border rounded-xl py-2.5 px-3 text-sm text-agora-ink placeholder:text-agora-ink-muted/80 focus:outline-none focus:border-agora-terracotta"
               />
             </div>
 
-            {/* Business Vertical Selector */}
+            {/* Business Type Selector */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-agora-ink-muted mb-2">
-                Select Your Business Vertical
+                Business Type
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {BUSINESS_TYPES.map((bt) => {
+                  const Icon = bt.icon;
                   const isSelected = businessType === bt.id;
                   return (
                     <button
@@ -127,7 +128,7 @@ export default function OnboardingView() {
                           : 'bg-agora-bg/60 border-agora-border text-agora-ink-muted hover:text-agora-ink'
                       }`}
                     >
-                      <span className="text-xl shrink-0">{bt.icon}</span>
+                      <Icon className="w-5 h-5 shrink-0 text-agora-terracotta mt-0.5" />
                       <div>
                         <span className="font-bold text-xs block text-agora-ink">{bt.name}</span>
                         <span className="text-[10px] text-agora-ink-muted leading-tight block mt-0.5">{bt.desc}</span>
@@ -141,7 +142,7 @@ export default function OnboardingView() {
             {/* Currency Selector */}
             <div className="space-y-2">
               <label className="block text-xs font-bold uppercase tracking-wider text-agora-ink-muted">
-                Primary Currency
+                Currency
               </label>
               <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
                 {CURRENCY_PRESETS.map((curr) => (
@@ -168,15 +169,15 @@ export default function OnboardingView() {
               type="submit"
               className="w-full py-3.5 bg-agora-terracotta hover:bg-agora-terracotta-hover text-agora-card font-serif font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm"
             >
-              <span>Continue to Step 2</span>
+              <span>Next Step</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
         ) : (
-          /* STEP 2: CATALOG INITIALIZATION */
+          /* STEP 2 */
           <div className="space-y-5">
             <label className="block text-xs font-bold uppercase tracking-wider text-agora-ink-muted">
-              How would you like to initialize your catalog?
+              Select catalog setup
             </label>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -191,9 +192,9 @@ export default function OnboardingView() {
               >
                 <Sparkles className="w-6 h-6 text-agora-terracotta" />
                 <div>
-                  <h4 className="font-serif font-bold text-agora-ink text-sm">Load Demo Catalog</h4>
+                  <h4 className="font-serif font-bold text-agora-ink text-sm">Load Sample Products</h4>
                   <p className="text-xs text-agora-ink-muted mt-1">
-                    Pre-populates sample items (drinks, snacks, medicines) tailored to your business vertical for instant testing.
+                    Pre-loads sample items tailored to your business type.
                   </p>
                 </div>
               </button>
@@ -211,7 +212,7 @@ export default function OnboardingView() {
                 <div>
                   <h4 className="font-serif font-bold text-agora-ink text-sm">Start Fresh</h4>
                   <p className="text-xs text-agora-ink-muted mt-1">
-                    Start with a clean empty catalog and add your own products manually.
+                    Start with an empty catalog and add products manually.
                   </p>
                 </div>
               </button>
@@ -223,7 +224,7 @@ export default function OnboardingView() {
                 onClick={() => setStep(1)}
                 className="flex-1 py-3 bg-agora-bg hover:bg-agora-border text-agora-ink font-bold rounded-xl text-sm transition-all border border-agora-border"
               >
-                Back to Step 1
+                Back
               </button>
               <button
                 type="button"
@@ -232,7 +233,7 @@ export default function OnboardingView() {
                 className="flex-1 py-3.5 bg-agora-terracotta hover:bg-agora-terracotta-hover text-agora-card font-serif font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50"
               >
                 <CheckCircle2 className="w-4 h-4" />
-                <span>{isSubmitting ? 'Initializing...' : 'Complete & Open Ledger'}</span>
+                <span>{isSubmitting ? 'Initializing...' : 'Complete Setup'}</span>
               </button>
             </div>
           </div>

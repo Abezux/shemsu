@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Product } from '@/types';
 import { X, PlusCircle, ArrowUpRight } from 'lucide-react';
+import ProductAvatar from '@/components/common/ProductAvatar';
 
 interface RestockModalProps {
   isOpen: boolean;
@@ -70,9 +71,7 @@ export default function RestockModal({
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           {/* Target Product Summary */}
           <div className="bg-agora-bg p-4 rounded-2xl border border-agora-border flex items-center gap-3">
-            <div className="w-12 h-12 bg-agora-card border border-agora-border rounded-xl flex items-center justify-center text-2xl shadow-inner">
-              {product.image_url || '📦'}
-            </div>
+            <ProductAvatar name={product.name} imageUrl={product.image_url} size="lg" />
             <div>
               <span className="text-[10px] font-bold uppercase tracking-wider text-agora-brass">
                 {product.category}

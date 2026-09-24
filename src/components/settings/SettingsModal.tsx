@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StoreSettings, BusinessType, AttributeDefinition } from '@/types';
 import { CURRENCY_PRESETS } from '@/utils/currency';
-import { X, Settings, ShieldAlert, Layers, Plus, Trash2, CheckCircle2 } from 'lucide-react';
+import { X, Settings, ShieldAlert, Layers, Plus, Trash2, CheckCircle2, Store, ShoppingBag, Pill, UtensilsCrossed, Scissors } from 'lucide-react';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -10,12 +10,12 @@ interface SettingsModalProps {
   onSave: (settings: StoreSettings) => Promise<void>;
 }
 
-const BUSINESS_TYPES: { id: BusinessType; name: string; icon: string; desc: string }[] = [
-  { id: 'GENERAL_RETAIL', name: 'General Retail', icon: '🏬', desc: 'Standard retail shop catalog' },
-  { id: 'MINI_SHOP', name: 'Mini-Shop / Kiosk', icon: '🛒', desc: 'Fast counter sales for snacks & drinks' },
-  { id: 'PHARMACY', name: 'Pharmacy / Drugstore', icon: '💊', desc: 'Tracks expiry dates, batch numbers & prescriptions' },
-  { id: 'RESTAURANT', name: 'Restaurant / Food Stall', icon: '🍔', desc: 'Tracks prep times, ingredients & unit measures' },
-  { id: 'SALON', name: 'Salon & Services', icon: '✂️', desc: 'Tracks service duration & beauty products' },
+const BUSINESS_TYPES: { id: BusinessType; name: string; icon: React.ElementType; desc: string }[] = [
+  { id: 'GENERAL_RETAIL', name: 'General Retail', icon: Store, desc: 'Standard shop catalog' },
+  { id: 'MINI_SHOP', name: 'Mini-Shop / Kiosk', icon: ShoppingBag, desc: 'Snacks, drinks & counter items' },
+  { id: 'PHARMACY', name: 'Pharmacy / Drugstore', icon: Pill, desc: 'Expiry dates, batch numbers & Rx' },
+  { id: 'RESTAURANT', name: 'Restaurant / Food Stall', icon: UtensilsCrossed, desc: 'Prep times & ingredients' },
+  { id: 'SALON', name: 'Salon & Services', icon: Scissors, desc: 'Services & beauty products' },
 ];
 
 export default function SettingsModal({
@@ -99,7 +99,7 @@ export default function SettingsModal({
         <div className="px-6 py-4 border-b border-agora-border flex items-center justify-between bg-agora-bg/50">
           <div className="flex items-center gap-2">
             <Settings className="w-5 h-5 text-agora-terracotta" />
-            <h3 className="font-serif font-bold text-agora-ink text-lg">Store Settings & Vertical</h3>
+            <h3 className="font-serif font-bold text-agora-ink text-lg">Store Settings</h3>
           </div>
           <button
             onClick={onClose}
@@ -112,7 +112,7 @@ export default function SettingsModal({
         <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
           {/* Store Name */}
           <div className="space-y-1">
-            <label className="text-xs font-bold text-agora-ink">Shop / Store Name</label>
+            <label className="text-xs font-bold text-agora-ink">Store Name</label>
             <input
               type="text"
               required
@@ -125,10 +125,11 @@ export default function SettingsModal({
           {/* Business Type Selector */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-agora-ink-muted mb-2">
-              Business Vertical Type
+              Business Type
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {BUSINESS_TYPES.map((bt) => {
+                const Icon = bt.icon;
                 const isSelected = businessType === bt.id;
                 return (
                   <button
@@ -141,7 +142,7 @@ export default function SettingsModal({
                         : 'bg-agora-bg/60 border-agora-border text-agora-ink-muted hover:text-agora-ink'
                     }`}
                   >
-                    <span className="text-xl shrink-0">{bt.icon}</span>
+                    <Icon className="w-5 h-5 shrink-0 text-agora-terracotta mt-0.5" />
                     <div>
                       <span className="font-bold text-xs block text-agora-ink">{bt.name}</span>
                       <span className="text-[10px] text-agora-ink-muted leading-tight block mt-0.5">{bt.desc}</span>
@@ -155,7 +156,7 @@ export default function SettingsModal({
           {/* Currency Presets */}
           <div className="space-y-2">
             <label className="block text-xs font-bold uppercase tracking-wider text-agora-ink-muted">
-              Currency Symbol
+              Currency
             </label>
             <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
               {CURRENCY_PRESETS.map((curr) => (
@@ -178,7 +179,7 @@ export default function SettingsModal({
           {/* Expiry Alerts Threshold */}
           <div className="bg-agora-terracotta-light/40 p-4 rounded-2xl border border-agora-terracotta-border space-y-2">
             <label className="text-xs font-bold text-agora-terracotta flex items-center gap-1.5">
-              <ShieldAlert className="w-4 h-4" /> Expiry Alert Threshold (Days)
+              <ShieldAlert className="w-4 h-4" /> Expiry Warning (Days)
             </label>
             <div className="flex items-center gap-3">
               <input
@@ -190,20 +191,20 @@ export default function SettingsModal({
                 className="w-32 bg-agora-card border border-agora-border rounded-xl px-3 py-2 text-sm text-agora-ink font-serif font-bold focus:outline-none focus:border-agora-terracotta"
               />
               <span className="text-xs text-agora-ink-muted font-medium">
-                Warn when products expire within <strong className="text-agora-terracotta">{expiryAlertDays} days</strong>
+                Warn when products expire in <strong className="text-agora-terracotta">{expiryAlertDays} days</strong>
               </span>
             </div>
           </div>
 
-          {/* Custom Attribute Definition Builder */}
+          {/* Custom Attributes */}
           <div className="space-y-3 pt-2">
             <div className="flex justify-between items-center">
               <label className="text-xs font-bold text-agora-ink flex items-center gap-1.5">
-                <Layers className="w-4 h-4 text-agora-terracotta" /> Custom Product Attribute Definitions
+                <Layers className="w-4 h-4 text-agora-terracotta" /> Custom Fields
               </label>
             </div>
 
-            {/* List of custom fields */}
+            {/* List */}
             <div className="space-y-2">
               {customAttributes.map((attr) => (
                 <div
@@ -227,13 +228,13 @@ export default function SettingsModal({
               ))}
             </div>
 
-            {/* Add Custom Attribute Input Row */}
+            {/* Add Custom Attribute Row */}
             <div className="bg-agora-bg/60 p-3 rounded-2xl border border-agora-border space-y-2">
-              <span className="text-[11px] text-agora-ink-muted font-bold block">Add New Field Definition</span>
+              <span className="text-[11px] text-agora-ink-muted font-bold block">Add Custom Field</span>
               <div className="grid grid-cols-3 gap-2">
                 <input
                   type="text"
-                  placeholder="Field Label (e.g. Supplier)"
+                  placeholder="Field Name (e.g. Supplier)"
                   value={newLabel}
                   onChange={(e) => setNewLabel(e.target.value)}
                   className="col-span-2 bg-agora-card border border-agora-border rounded-xl px-2.5 py-1.5 text-xs text-agora-ink focus:outline-none"
@@ -254,7 +255,7 @@ export default function SettingsModal({
                 onClick={handleAddCustomAttribute}
                 className="w-full py-1.5 bg-agora-card hover:bg-agora-border text-agora-terracotta font-bold rounded-xl text-xs flex items-center justify-center gap-1 transition-all border border-agora-border"
               >
-                <Plus className="w-3.5 h-3.5" /> Add Attribute Definition
+                <Plus className="w-3.5 h-3.5" /> Add Field
               </button>
             </div>
           </div>

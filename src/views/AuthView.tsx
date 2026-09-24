@@ -59,7 +59,7 @@ export default function AuthView() {
         <div className="text-center space-y-2 flex flex-col items-center">
           <AgoraLogo size="lg" />
           <p className="text-xs text-agora-ink-muted font-medium mt-1">
-            Digital Ledger for Modern Merchants
+            Digital Ledger for Merchants
           </p>
         </div>
 
@@ -115,7 +115,7 @@ export default function AuthView() {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1">
-            <label className="text-xs font-bold text-agora-ink">Email Address</label>
+            <label className="text-xs font-bold text-agora-ink">Email</label>
             <div className="relative">
               <Mail className="w-4 h-4 text-agora-ink-muted absolute left-3 top-1/2 -translate-y-1/2" />
               <input
@@ -124,7 +124,7 @@ export default function AuthView() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="merchant@example.com"
-                className="w-full bg-agora-bg border border-agora-border rounded-xl py-2.5 pl-9 pr-4 text-sm text-agora-ink placeholder-agora-ink-muted/60 focus:outline-none focus:border-agora-terracotta"
+                className="w-full bg-agora-bg border border-agora-border rounded-xl py-2.5 pl-9 pr-4 text-sm text-agora-ink placeholder:text-agora-ink-muted/80 focus:outline-none focus:border-agora-terracotta"
               />
             </div>
           </div>
@@ -151,7 +151,7 @@ export default function AuthView() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-agora-bg border border-agora-border rounded-xl py-2.5 pl-9 pr-4 text-sm text-agora-ink placeholder-agora-ink-muted/60 focus:outline-none focus:border-agora-terracotta"
+                  className="w-full bg-agora-bg border border-agora-border rounded-xl py-2.5 pl-9 pr-4 text-sm text-agora-ink placeholder:text-agora-ink-muted/80 focus:outline-none focus:border-agora-terracotta"
                 />
               </div>
             </div>
@@ -168,7 +168,7 @@ export default function AuthView() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-agora-bg border border-agora-border rounded-xl py-2.5 pl-9 pr-4 text-sm text-agora-ink placeholder-agora-ink-muted/60 focus:outline-none focus:border-agora-terracotta"
+                  className="w-full bg-agora-bg border border-agora-border rounded-xl py-2.5 pl-9 pr-4 text-sm text-agora-ink placeholder:text-agora-ink-muted/80 focus:outline-none focus:border-agora-terracotta"
                 />
               </div>
             </div>
@@ -183,10 +183,10 @@ export default function AuthView() {
               {isSubmitting
                 ? 'Processing...'
                 : mode === 'LOGIN'
-                ? 'Sign In to Agora Ledger'
+                ? 'Sign In'
                 : mode === 'SIGNUP'
-                ? 'Create Merchant Account'
-                : 'Send Recovery Email'}
+                ? 'Create Account'
+                : 'Send Reset Link'}
             </span>
             <ArrowRight className="w-4 h-4" />
           </button>
@@ -202,10 +202,10 @@ export default function AuthView() {
           </button>
         )}
 
-        {/* Security Footer Note */}
+        {/* Footer */}
         <div className="pt-3 border-t border-agora-border text-center flex items-center justify-center gap-1.5 text-[11px] text-agora-ink-muted">
           <ShieldCheck className="w-3.5 h-3.5 text-agora-terracotta" />
-          <span>Protected by Supabase Row Level Security</span>
+          <span>Protected & Encrypted</span>
         </div>
       </div>
     </div>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import AuthView from '@/views/AuthView';
 import OnboardingView from '@/views/OnboardingView';
-import Navbar from '@/components/navigation/Navbar';
+import Navbar, { Sidebar } from '@/components/navigation/Navbar';
 import SellPage from '@/views/SellView';
 import InventoryPage from '@/views/InventoryView';
 import SalesHistoryPage from '@/views/SalesView';
@@ -53,15 +53,18 @@ function AppContent() {
   }
 
   return (
-    <div className="bg-agora-bg text-agora-ink min-h-screen flex flex-col pb-16 md:pb-0">
+    <div className="bg-agora-bg text-agora-ink h-screen flex flex-col overflow-hidden">
       <Navbar activeTab={activeTab} onNavigate={navigateTo} />
-      <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-4 md:p-6">
-        {activeTab === 'sell' && <SellPage />}
-        {activeTab === 'inventory' && <InventoryPage />}
-        {activeTab === 'sales' && <SalesHistoryPage />}
-        {activeTab === 'audit' && <AuditPage />}
-        {activeTab === 'analytics' && <AnalyticsPage />}
-      </main>
+      <div className="flex-1 flex min-h-0 w-full overflow-hidden">
+        <Sidebar activeTab={activeTab} onNavigate={navigateTo} />
+        <main className="flex-1 min-w-0 p-3 sm:p-4 md:p-6 overflow-y-auto pb-20 md:pb-6 h-full">
+          {activeTab === 'sell' && <SellPage />}
+          {activeTab === 'inventory' && <InventoryPage />}
+          {activeTab === 'sales' && <SalesHistoryPage />}
+          {activeTab === 'audit' && <AuditPage />}
+          {activeTab === 'analytics' && <AnalyticsPage />}
+        </main>
+      </div>
     </div>
   );
 }
@@ -73,4 +76,3 @@ export default function App() {
     </AuthProvider>
   );
 }
-

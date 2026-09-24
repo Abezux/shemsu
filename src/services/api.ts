@@ -100,7 +100,7 @@ export const api = {
               low_stock_threshold: productData.low_stock_threshold ?? 5,
               unit_type: productData.unit_type || 'piece',
               attributes: productData.attributes || {},
-              image_url: productData.image_url || '📦',
+              image_url: productData.image_url || '',
               updated_at: now,
             })
             .eq('id', productData.id)
@@ -136,7 +136,7 @@ export const api = {
               low_stock_threshold: productData.low_stock_threshold ?? 5,
               unit_type: productData.unit_type || 'piece',
               attributes: productData.attributes || {},
-              image_url: productData.image_url || '📦',
+              image_url: productData.image_url || '',
             })
             .select('*')
             .single();
@@ -202,7 +202,7 @@ export const api = {
       low_stock_threshold: productData.low_stock_threshold ?? 5,
       unit_type: productData.unit_type || 'piece',
       attributes: productData.attributes || {},
-      image_url: productData.image_url || '📦',
+      image_url: productData.image_url || '',
       created_at: now,
       updated_at: now,
     };
@@ -597,7 +597,7 @@ export const api = {
           low_stock_threshold: p.low_stock_threshold,
           unit_type: p.unit_type || 'piece',
           attributes: p.attributes || {},
-          image_url: p.image_url || '📦',
+          image_url: p.image_url || '',
         }));
 
         const { data: insertedProds, error } = await supabase

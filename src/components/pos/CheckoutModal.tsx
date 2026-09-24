@@ -73,7 +73,7 @@ export default function CheckoutModal({
     <div className="fixed inset-0 z-50 bg-agora-ink/60 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-agora-card border border-agora-border rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 text-agora-ink">
         {completedSale ? (
-          /* Sale Success View with Signature Stamp Seal */
+          /* Sale Success View */
           <div className="p-6 text-center space-y-5">
             {/* Signature Stamp Seal Mark */}
             <div className="relative mx-auto w-24 h-24 flex items-center justify-center my-2">
@@ -84,20 +84,20 @@ export default function CheckoutModal({
                   AGORA
                 </span>
                 <span className="text-[7px] font-bold tracking-tighter text-agora-terracotta uppercase">
-                  VERIFIED RECORD
+                  RECORDED
                 </span>
               </div>
             </div>
 
             <div>
               <span className="text-xs font-serif font-bold uppercase tracking-wider text-agora-sage bg-agora-sage-light px-3 py-1 rounded-full border border-agora-sage-border">
-                Sale Entry Recorded
+                Sale Complete
               </span>
               <h2 className="text-3xl font-serif font-black text-agora-terracotta mt-3">
                 {formatCurrency(completedSale.total_amount, currencySymbol)}
               </h2>
               <p className="text-xs text-agora-ink-muted mt-1 font-medium">
-                Receipt {completedSale.sale_number} • Ledger inventory updated
+                Receipt {completedSale.sale_number} • Stock updated
               </p>
             </div>
 
@@ -105,7 +105,7 @@ export default function CheckoutModal({
             {paymentMethod === 'CASH' && cashTenderedInCents > totalAmountInCents && (
               <div className="bg-agora-sage-light border border-agora-sage-border rounded-2xl p-4 text-center">
                 <span className="text-xs text-agora-sage uppercase tracking-wider font-bold block">
-                  Change to return to customer
+                  Change due to customer
                 </span>
                 <div className="text-3xl font-serif font-black text-agora-sage mt-1">
                   {formatCurrency(changeInCents, currencySymbol)}
@@ -113,11 +113,11 @@ export default function CheckoutModal({
               </div>
             )}
 
-            {/* Sold Items Summary — Ledger Line Rows */}
+            {/* Sold Items Summary */}
             <div className="bg-agora-bg border border-agora-border rounded-2xl p-4 text-left max-h-40 overflow-y-auto space-y-2">
               <div className="flex justify-between text-xs font-bold text-agora-ink-muted border-b border-agora-border pb-1">
-                <span>Item Description</span>
-                <span>Qty × Unit Price</span>
+                <span>Item</span>
+                <span>Qty × Price</span>
               </div>
               {completedSale.items?.map((item) => (
                 <div key={item.id} className="flex justify-between text-xs text-agora-ink border-b border-agora-border/40 pb-1">
@@ -133,7 +133,7 @@ export default function CheckoutModal({
               onClick={onClose}
               className="w-full py-3.5 bg-agora-terracotta hover:bg-agora-terracotta-hover text-agora-card font-serif font-bold text-lg rounded-xl shadow-md transition-all active:scale-[0.99]"
             >
-              Done & Start Next Sale
+              Next Sale
             </button>
           </div>
         ) : (
@@ -143,7 +143,7 @@ export default function CheckoutModal({
             <div className="px-6 py-4 border-b border-agora-border flex items-center justify-between bg-agora-bg/50">
               <div className="flex items-center gap-2">
                 <Receipt className="w-5 h-5 text-agora-terracotta" />
-                <h3 className="font-serif font-bold text-agora-ink text-lg">Record Sale Entry</h3>
+                <h3 className="font-serif font-bold text-agora-ink text-lg">Complete Sale</h3>
               </div>
               <button
                 onClick={onClose}
@@ -158,7 +158,7 @@ export default function CheckoutModal({
               <div className="bg-agora-bg p-4 rounded-2xl border border-agora-border flex justify-between items-center">
                 <div>
                   <span className="text-xs text-agora-ink-muted uppercase tracking-wider font-bold">
-                    Total Amount Due
+                    Total Due
                   </span>
                   <div className="text-3xl font-serif font-black text-agora-terracotta">
                     {formatCurrency(totalAmountInCents, currencySymbol)}
@@ -202,19 +202,19 @@ export default function CheckoutModal({
                 </div>
               </div>
 
-              {/* Cash Calculator (if CASH chosen) */}
+              {/* Cash Calculator */}
               {paymentMethod === 'CASH' && (
                 <div className="space-y-3 bg-agora-bg/70 p-4 rounded-2xl border border-agora-border">
                   <div className="flex justify-between items-center">
                     <label className="text-xs font-bold text-agora-ink">
-                      Cash Tendered
+                      Cash Received
                     </label>
                     <button
                       type="button"
                       onClick={handleExactCash}
                       className="text-xs font-bold text-agora-terracotta hover:underline"
                     >
-                      Exact Cash
+                      Exact Amount
                     </button>
                   </div>
 
@@ -249,7 +249,7 @@ export default function CheckoutModal({
                   {/* Change Output */}
                   {cashTenderedInCents >= totalAmountInCents && (
                     <div className="flex justify-between items-center pt-2 border-t border-agora-border text-xs">
-                      <span className="text-agora-ink-muted font-medium">Change to return:</span>
+                      <span className="text-agora-ink-muted font-medium">Change due:</span>
                       <span className="font-serif font-bold text-agora-sage text-base">
                         {formatCurrency(changeInCents, currencySymbol)}
                       </span>
@@ -258,21 +258,21 @@ export default function CheckoutModal({
                 </div>
               )}
 
-              {/* Note / Memo */}
+              {/* Note */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-agora-ink-muted mb-1">
-                  Optional Ledger Note
+                  Note (Optional)
                 </label>
                 <input
                   type="text"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="e.g. Customer requested discount or split payment"
-                  className="w-full bg-agora-bg border border-agora-border rounded-xl py-2 px-3 text-xs text-agora-ink placeholder-agora-ink-muted/60 focus:outline-none focus:border-agora-terracotta"
+                  placeholder="e.g. Discount applied"
+                  className="w-full bg-agora-bg border border-agora-border rounded-xl py-2 px-3 text-xs text-agora-ink placeholder:text-agora-ink-muted/80 focus:outline-none focus:border-agora-terracotta"
                 />
               </div>
 
-              {/* Action Buttons */}
+              {/* Actions */}
               <div className="flex items-center gap-3 pt-2">
                 <button
                   type="button"
@@ -287,7 +287,7 @@ export default function CheckoutModal({
                   disabled={isSubmitting}
                   className="flex-1 py-3 bg-agora-terracotta hover:bg-agora-terracotta-hover text-agora-card font-serif font-bold rounded-xl text-sm shadow-md transition-all disabled:opacity-50"
                 >
-                  {isSubmitting ? 'Recording...' : 'Record Entry'}
+                  {isSubmitting ? 'Saving...' : 'Complete Sale'}
                 </button>
               </div>
             </form>

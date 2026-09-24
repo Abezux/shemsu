@@ -17,6 +17,7 @@ import {
   ShieldAlert,
   Calendar
 } from 'lucide-react';
+import ProductAvatar from '@/components/common/ProductAvatar';
 
 export default function InventoryView() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -50,7 +51,7 @@ export default function InventoryView() {
       setProducts(prods);
       setSettings(stgs);
     } catch (err) {
-      console.error('Error loading inventory:', err);
+      console.error('Error loading products:', err);
     } finally {
       setIsLoading(false);
     }
@@ -137,88 +138,88 @@ export default function InventoryView() {
   };
 
   const handleDeleteProduct = async (id: string, name: string) => {
-    if (confirm(`Are you sure you want to remove "${name}" from catalog?`)) {
+    if (confirm(`Remove "${name}" from catalog?`)) {
       await api.deleteProduct(id);
       await loadData();
     }
   };
 
   return (
-    <div className="space-y-6 text-agora-ink">
+    <div className="space-y-4 sm:space-y-6 text-agora-ink">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-serif font-black text-agora-ink tracking-tight flex items-center gap-2">
-            <Package className="w-7 h-7 text-agora-terracotta" />
-            Inventory & Stock Catalog
+          <h1 className="text-xl sm:text-2xl font-serif font-black text-agora-ink tracking-tight flex items-center gap-2">
+            <Package className="w-6 h-6 sm:w-7 sm:h-7 text-agora-terracotta" />
+            Products
           </h1>
           <p className="text-xs text-agora-ink-muted mt-0.5 font-medium">
-            Manage product catalog, unit types, vertical attributes, and expiry date alerts
+            Manage products, stock levels, and prices
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={handleOpenAdd}
-            className="flex items-center gap-2 px-4 py-2.5 bg-agora-terracotta hover:bg-agora-terracotta-hover text-agora-card font-serif font-bold rounded-xl shadow-md transition-all active:scale-95 text-xs sm:text-sm"
+            className="flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 bg-agora-terracotta hover:bg-agora-terracotta-hover text-agora-card font-serif font-bold rounded-xl shadow-md transition-all active:scale-95 text-xs sm:text-sm"
           >
-            <Plus className="w-4 h-4" /> Add New Product
+            <Plus className="w-4 h-4" /> Add Product
           </button>
         </div>
       </div>
 
-      {/* KPI Cards Banner */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="ledger-card p-4">
+      {/* KPI Cards Banner (Compact Mobile Density) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
+        <div className="ledger-card p-3 sm:p-4">
           <div className="flex items-center justify-between text-agora-ink-muted text-xs font-bold">
-            <span>Total Catalog Items</span>
+            <span>Total Products</span>
             <Layers className="w-4 h-4 text-agora-terracotta" />
           </div>
-          <div className="text-2xl font-serif font-black text-agora-ink mt-2">{products.length}</div>
-          <span className="text-[10px] text-agora-ink-muted">Active product SKUs</span>
+          <div className="text-xl sm:text-2xl font-serif font-black text-agora-ink mt-1.5">{products.length}</div>
+          <span className="text-[10px] text-agora-ink-muted">Active items</span>
         </div>
 
-        <div className="ledger-card p-4 border-agora-terracotta/40 bg-agora-terracotta-light/30">
+        <div className="ledger-card p-3 sm:p-4 border-agora-terracotta/40 bg-agora-terracotta-light/30">
           <div className="flex items-center justify-between text-agora-terracotta text-xs font-bold">
-            <span>Low Stock Items</span>
+            <span>Low Stock</span>
             <AlertTriangle className="w-4 h-4 text-agora-terracotta" />
           </div>
-          <div className="text-2xl font-serif font-black text-agora-terracotta mt-2">{lowStockCount}</div>
-          <span className="text-[10px] text-agora-terracotta font-semibold">Below threshold</span>
+          <div className="text-xl sm:text-2xl font-serif font-black text-agora-terracotta mt-1.5">{lowStockCount}</div>
+          <span className="text-[10px] text-agora-terracotta font-semibold">Needs restock</span>
         </div>
 
-        <div className="ledger-card p-4 border-agora-brick-border bg-agora-brick-light/30">
+        <div className="ledger-card p-3 sm:p-4 border-agora-brick-border bg-agora-brick-light/30">
           <div className="flex items-center justify-between text-agora-brick text-xs font-bold">
             <span>Expiring Soon</span>
             <ShieldAlert className="w-4 h-4 text-agora-brick" />
           </div>
-          <div className="text-2xl font-serif font-black text-agora-brick mt-2">{expiringCount}</div>
-          <span className="text-[10px] text-agora-brick font-semibold">Within {settings.expiry_alert_days || 30} days</span>
+          <div className="text-xl sm:text-2xl font-serif font-black text-agora-brick mt-1.5">{expiringCount}</div>
+          <span className="text-[10px] text-agora-brick font-semibold">In {settings.expiry_alert_days || 30} days</span>
         </div>
 
-        <div className="ledger-card p-4">
+        <div className="ledger-card p-3 sm:p-4">
           <div className="flex items-center justify-between text-agora-ink-muted text-xs font-bold">
-            <span>Stock Valuation</span>
+            <span>Stock Value</span>
             <TrendingUp className="w-4 h-4 text-agora-sage" />
           </div>
-          <div className="text-xl font-serif font-black text-agora-sage mt-2 truncate">
+          <div className="text-lg sm:text-xl font-serif font-black text-agora-sage mt-1.5 truncate">
             {formatCurrency(totalValuationCents, settings.currency_symbol)}
           </div>
-          <span className="text-[10px] text-agora-ink-muted">Total retail value</span>
+          <span className="text-[10px] text-agora-ink-muted">Retail total</span>
         </div>
       </div>
 
       {/* Filter & Search Toolbar */}
-      <div className="ledger-card p-4 space-y-3 shadow-sm">
-        <div className="flex flex-col sm:flex-row items-center gap-3">
+      <div className="ledger-card p-3 sm:p-4 space-y-3 shadow-sm">
+        <div className="flex flex-col sm:flex-row items-center gap-2.5">
           <div className="relative flex-1 w-full">
             <Search className="w-4 h-4 text-agora-ink-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by name, category, or batch number..."
-              className="w-full bg-agora-bg border border-agora-border rounded-xl py-2 pl-9 pr-4 text-xs text-agora-ink focus:outline-none focus:border-agora-terracotta"
+              placeholder="Search products..."
+              className="w-full bg-agora-bg border border-agora-border rounded-xl py-2 pl-9 pr-4 text-xs text-agora-ink placeholder:text-agora-ink-muted/80 focus:outline-none focus:border-agora-terracotta"
             />
           </div>
 
@@ -250,13 +251,13 @@ export default function InventoryView() {
               }`}
             >
               <ShieldAlert className="w-3.5 h-3.5 text-agora-brick" />
-              Expiring Soon ({expiringCount})
+              Expiring ({expiringCount})
             </button>
           </div>
         </div>
 
         {/* Categories */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
           {categories.map((cat) => (
             <button
               key={cat}
@@ -273,31 +274,31 @@ export default function InventoryView() {
         </div>
       </div>
 
-      {/* Table — Ledger Line Style */}
+      {/* Table */}
       <div className="ledger-card overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px] text-left text-xs">
+          <table className="w-full min-w-[700px] text-left text-xs">
             <thead className="bg-agora-bg/80 border-b border-agora-border text-agora-ink-muted uppercase tracking-wider font-bold">
               <tr>
-                <th className="p-4">Product Name</th>
-                <th className="p-4">Category</th>
-                <th className="p-4">Selling Price</th>
-                <th className="p-4">Current Stock</th>
-                <th className="p-4">Attributes / Expiry</th>
-                <th className="p-4 text-right">Actions</th>
+                <th className="p-3 sm:p-4">Product</th>
+                <th className="p-3 sm:p-4">Category</th>
+                <th className="p-3 sm:p-4">Price</th>
+                <th className="p-3 sm:p-4">Stock</th>
+                <th className="p-3 sm:p-4">Details</th>
+                <th className="p-3 sm:p-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-agora-border">
               {isLoading ? (
                 <tr>
                   <td colSpan={6} className="p-8 text-center text-agora-ink-muted">
-                    Loading inventory catalog...
+                    Loading products...
                   </td>
                 </tr>
               ) : filteredProducts.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="p-8 text-center text-agora-ink-muted">
-                    No products found matching filters.
+                    No products found.
                   </td>
                 </tr>
               ) : (
@@ -308,13 +309,10 @@ export default function InventoryView() {
                   const isExpiring = expDate ? expDate.getTime() <= expiryCutoff : false;
 
                   return (
-                    <tr
-                      key={p.id}
-                      className="ledger-row"
-                    >
-                      <td className="p-4 font-bold text-agora-ink">
+                    <tr key={p.id} className="ledger-row">
+                      <td className="p-3 sm:p-4 font-bold text-agora-ink">
                         <div className="flex items-center gap-2.5">
-                          <span className="text-xl">{p.image_url || '📦'}</span>
+                          <ProductAvatar name={p.name} imageUrl={p.image_url} size="sm" />
                           <div>
                             <span className="block font-bold text-sm text-agora-ink">{p.name}</span>
                             {p.cost_price && (
@@ -326,17 +324,17 @@ export default function InventoryView() {
                         </div>
                       </td>
 
-                      <td className="p-4">
-                        <span className="px-2.5 py-1 rounded-lg bg-agora-bg border border-agora-border text-agora-ink font-semibold text-[11px]">
+                      <td className="p-3 sm:p-4">
+                        <span className="px-2 py-0.5 rounded-lg bg-agora-bg border border-agora-border text-agora-ink font-semibold text-[11px]">
                           {p.category}
                         </span>
                       </td>
 
-                      <td className="p-4 font-serif font-bold text-agora-terracotta text-sm">
+                      <td className="p-3 sm:p-4 font-serif font-bold text-agora-terracotta text-sm">
                         {formatCurrency(p.price, settings.currency_symbol)}
                       </td>
 
-                      <td className="p-4">
+                      <td className="p-3 sm:p-4">
                         <div className="flex items-center gap-1">
                           <span className="font-serif font-extrabold text-sm text-agora-ink">
                             {p.stock_quantity}
@@ -347,7 +345,7 @@ export default function InventoryView() {
                         </div>
                       </td>
 
-                      <td className="p-4 space-y-1">
+                      <td className="p-3 sm:p-4 space-y-1">
                         {expDate && (
                           <span
                             className={`px-2 py-0.5 rounded-md text-[10px] font-bold inline-flex items-center gap-1 ${
@@ -360,12 +358,6 @@ export default function InventoryView() {
                           </span>
                         )}
 
-                        {p.attributes?.batch_no && (
-                          <span className="text-[10px] text-agora-ink-muted block font-medium">
-                            Batch: {String(p.attributes.batch_no)}
-                          </span>
-                        )}
-
                         {isLow && !isExpiring && (
                           <span className="px-2 py-0.5 rounded-full bg-agora-terracotta-light text-agora-terracotta border border-agora-terracotta-border text-[10px] font-bold inline-block">
                             Low Stock (≤{p.low_stock_threshold})
@@ -373,24 +365,24 @@ export default function InventoryView() {
                         )}
                       </td>
 
-                      <td className="p-4 text-right space-x-1">
+                      <td className="p-3 sm:p-4 text-right space-x-1">
                         <button
                           onClick={() => handleOpenRestock(p)}
-                          className="px-3 py-1.5 bg-agora-terracotta/10 hover:bg-agora-terracotta/20 text-agora-terracotta font-bold rounded-lg border border-agora-terracotta/30 transition-all text-xs inline-flex items-center gap-1"
+                          className="px-2.5 py-1 bg-agora-terracotta/10 hover:bg-agora-terracotta/20 text-agora-terracotta font-bold rounded-lg border border-agora-terracotta/30 transition-all text-xs inline-flex items-center gap-1"
                         >
                           <PlusCircle className="w-3.5 h-3.5" /> Restock
                         </button>
                         <button
                           onClick={() => handleOpenEdit(p)}
                           className="p-1.5 text-agora-ink-muted hover:text-agora-ink hover:bg-agora-bg rounded-lg transition-all"
-                          title="Edit product"
+                          title="Edit"
                         >
                           <Edit3 className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDeleteProduct(p.id, p.name)}
                           className="p-1.5 text-agora-brick/70 hover:text-agora-brick hover:bg-agora-brick-light rounded-lg transition-all"
-                          title="Delete product"
+                          title="Delete"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
