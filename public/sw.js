@@ -1,5 +1,5 @@
 // Agora POS Service Worker
-const CACHE_NAME = 'agora-pos-v1';
+const CACHE_NAME = 'agora-pos-v__BUILD_TIMESTAMP__';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -30,6 +30,20 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+
+  const url = new URL(event.request.url);
+
+  // Bypass cache completely for Supabase API & Auth endpoints (network-only)
+  if (
+    url.hostname.includes('supabase.co') ||
+    url.pathname.includes('/rest/') ||
+    url.pathname.includes('/auth/') ||
+    url.pathname.includes('/rpc/')
+  ) {
+    return;
+  }
+
+  // Cache-first strategy for static build assets
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
