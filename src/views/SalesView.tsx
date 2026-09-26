@@ -95,6 +95,16 @@ export default function SalesView() {
     setIsVoidOpen(true);
   };
 
+  const handleProcessRefund = async (
+    saleId: string,
+    refundItems: { sale_item_id: string; quantity: number }[],
+    reason?: string
+  ) => {
+    const updatedSale = await api.processRefund(saleId, refundItems, reason);
+    setSelectedSale(updatedSale);
+    await loadData();
+  };
+
   const handleConfirmVoid = async (saleId: string, reason: string) => {
     await api.voidSale(saleId, reason);
     await loadData();
@@ -109,7 +119,7 @@ export default function SalesView() {
             Sales
           </h1>
           <p className="text-xs text-agora-ink-muted mt-0.5 font-medium">
-            View completed sales, receipts, and void transactions
+            View completed sales, receipts, refunds, and void transactions
           </p>
         </div>
       </div>
@@ -276,6 +286,7 @@ export default function SalesView() {
         currencySymbol={settings.currency_symbol}
         onClose={() => setIsDetailOpen(false)}
         onRequestVoid={handleRequestVoidFromDetail}
+        onProcessRefund={handleProcessRefund}
       />
 
       <VoidSaleModal

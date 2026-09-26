@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Sale, Product, StoreSettings } from '@/types';
+import { Sale, Product, StoreSettings, RegisterClosure } from '@/types';
 import { api } from '@/services/api';
 import { formatCurrency } from '@/utils/currency';
+import { formatDate } from '@/utils/formatters';
 import DrilldownModal from '@/components/analytics/DrilldownModal';
+import RegisterClosureModal from '@/components/reports/RegisterClosureModal';
 import {
   ResponsiveContainer,
   LineChart,
@@ -27,7 +29,11 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   ShieldAlert,
-  Clock
+  Clock,
+  Lock,
+  History,
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 import ProductAvatar from '@/components/common/ProductAvatar';
 
@@ -36,6 +42,7 @@ const CATEGORY_COLORS = ['#C1502E', '#8B7355', '#5C7A52', '#9B4038', '#A0958C', 
 export default function AnalyticsView() {
   const [sales, setSales] = useState<Sale[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [registerClosures, setRegisterClosures] = useState<RegisterClosure[]>([]);
   const [settings, setSettings] = useState<StoreSettings>({
     store_name: 'Agora Kiosk',
     currency_symbol: '$',
@@ -48,6 +55,7 @@ export default function AnalyticsView() {
   
   const [trendDays, setTrendDays] = useState<number>(7);
   const [isLoading, setIsLoading] = useState(true);
+  const [isClosureModalOpen, setIsClosureModalOpen] = useState(false);
 
   // Drilldown Modal State
   const [drilldownState, setDrilldownState] = useState<{
@@ -63,14 +71,16 @@ export default function AnalyticsView() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [salesData, prods, stgs] = await Promise.all([
+      const [salesData, prods, stgs, closures] = await Promise.all([
         api.getSales(),
         api.getProducts(),
         api.getSettings(),
+        api.getRegisterClosures(),
       ]);
       setSales(salesData);
       setProducts(prods);
       setSettings(stgs);
+      setRegisterClosures(closures);
     } catch (err) {
       console.error('Error loading reports:', err);
     } finally {
@@ -81,6 +91,12 @@ export default function AnalyticsView() {
   useEffect(() => {
     loadData();
   }, []);
+
+  const handleConfirmClosure = async (countedCash: number, notes?: string) => {
+    const closure = await api.closeRegister(countedCash, notes);
+    await loadData();
+    return closure;
+  };
 
   const metricTrends = useMemo(() => {
     return api.getMetricTrends(sales, trendDays === 7 ? 1 : trendDays === 30 ? 7 : 30);
@@ -126,7 +142,7 @@ export default function AnalyticsView() {
 
   return (
     <div className="space-y-4 sm:space-y-6 text-agora-ink">
-      {/* Title & Range Selector */}
+      {/* Title & Range Selector / Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-serif font-black text-agora-ink tracking-tight flex items-center gap-2">
@@ -134,29 +150,39 @@ export default function AnalyticsView() {
             Reports & Insights
           </h1>
           <p className="text-xs text-agora-ink-muted mt-0.5 font-medium">
-            Sales trends, peak hours, category breakdown, and stock alerts
+            Sales trends, cash register closures, peak hours, and inventory alerts
           </p>
         </div>
 
-        {/* Range Selector */}
-        <div className="flex items-center gap-1 bg-agora-card border border-agora-border p-1 rounded-xl w-max">
-          {[
-            { days: 7, label: '7 Days' },
-            { days: 30, label: '30 Days' },
-            { days: 90, label: '90 Days' },
-          ].map((r) => (
-            <button
-              key={r.days}
-              onClick={() => setTrendDays(r.days)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                trendDays === r.days
-                  ? 'bg-agora-terracotta text-agora-card shadow-sm'
-                  : 'text-agora-ink-muted hover:text-agora-ink'
-              }`}
-            >
-              {r.label}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          {/* Close Register Action */}
+          <button
+            onClick={() => setIsClosureModalOpen(true)}
+            className="flex items-center gap-2 px-3.5 py-2 bg-agora-terracotta hover:bg-agora-terracotta-hover text-agora-card font-serif font-bold rounded-xl shadow-md transition-all active:scale-95 text-xs sm:text-sm"
+          >
+            <Lock className="w-4 h-4" /> Close Register
+          </button>
+
+          {/* Range Selector */}
+          <div className="flex items-center gap-1 bg-agora-card border border-agora-border p-1 rounded-xl w-max">
+            {[
+              { days: 7, label: '7 Days' },
+              { days: 30, label: '30 Days' },
+              { days: 90, label: '90 Days' },
+            ].map((r) => (
+              <button
+                key={r.days}
+                onClick={() => setTrendDays(r.days)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  trendDays === r.days
+                    ? 'bg-agora-terracotta text-agora-card shadow-sm'
+                    : 'text-agora-ink-muted hover:text-agora-ink'
+                }`}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -473,6 +499,80 @@ export default function AnalyticsView() {
         )}
       </div>
 
+      {/* Register Closures History */}
+      <div className="ledger-card p-4 sm:p-5 space-y-3 shadow-sm">
+        <div className="flex items-center justify-between pb-2 border-b border-agora-border">
+          <div className="flex items-center gap-2">
+            <History className="w-5 h-5 text-agora-terracotta" />
+            <h3 className="font-serif font-bold text-agora-ink text-sm sm:text-base">Register Closures Log</h3>
+          </div>
+          <span className="text-xs text-agora-ink-muted">End-of-day reconciliation</span>
+        </div>
+
+        {registerClosures.length === 0 ? (
+          <div className="p-6 text-center text-xs text-agora-ink-muted">
+            No register closures recorded yet.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-agora-bg/80 border-b border-agora-border text-agora-ink-muted uppercase tracking-wider font-bold">
+                <tr>
+                  <th className="p-3">Closed Date</th>
+                  <th className="p-3">Expected Cash</th>
+                  <th className="p-3">Counted Cash</th>
+                  <th className="p-3">Variance</th>
+                  <th className="p-3">Notes</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-agora-border">
+                {registerClosures.map((c) => {
+                  const variance = c.variance;
+                  return (
+                    <tr key={c.id} className="ledger-row">
+                      <td className="p-3 font-semibold text-agora-ink whitespace-nowrap">
+                        {formatDate(c.closed_at)}
+                      </td>
+                      <td className="p-3 font-serif font-bold text-agora-ink whitespace-nowrap">
+                        {formatCurrency(c.expected_cash, settings.currency_symbol)}
+                      </td>
+                      <td className="p-3 font-serif font-bold text-agora-ink whitespace-nowrap">
+                        {formatCurrency(c.counted_cash, settings.currency_symbol)}
+                      </td>
+                      <td className="p-3 whitespace-nowrap">
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-1 ${
+                            variance === 0
+                              ? 'bg-agora-sage-light text-agora-sage border border-agora-sage-border'
+                              : variance > 0
+                              ? 'bg-agora-brass/10 text-agora-brass border border-agora-brass/30'
+                              : 'bg-agora-brick-light text-agora-brick border border-agora-brick-border'
+                          }`}
+                        >
+                          {variance === 0 ? (
+                            <CheckCircle2 className="w-3 h-3 text-agora-sage" />
+                          ) : (
+                            <AlertCircle className="w-3 h-3" />
+                          )}
+                          {variance === 0
+                            ? 'Balanced'
+                            : variance > 0
+                            ? `+${formatCurrency(variance, settings.currency_symbol)}`
+                            : formatCurrency(variance, settings.currency_symbol)}
+                        </span>
+                      </td>
+                      <td className="p-3 text-agora-ink-muted text-xs max-w-xs truncate">
+                        {c.notes || '-'}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
       <DrilldownModal
         isOpen={drilldownState.isOpen}
         title={drilldownState.title}
@@ -480,6 +580,13 @@ export default function AnalyticsView() {
         sales={sales}
         currencySymbol={settings.currency_symbol}
         onClose={() => setDrilldownState({ ...drilldownState, isOpen: false })}
+      />
+
+      <RegisterClosureModal
+        isOpen={isClosureModalOpen}
+        currencySymbol={settings.currency_symbol}
+        onClose={() => setIsClosureModalOpen(false)}
+        onConfirmClosure={handleConfirmClosure}
       />
     </div>
   );

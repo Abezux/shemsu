@@ -46,32 +46,69 @@ export interface SaleItem {
   product_id: string;
   product_name: string;
   quantity: number; // integer or decimal for fractional units (e.g., 0.5 kg)
+  refunded_quantity?: number; // refunded quantity for partial refunds
   unit_price: number; // cents snapshot
   line_total: number; // cents snapshot
   unit_type?: UnitType;
+}
+
+export interface SalePayment {
+  id?: string;
+  sale_id?: string;
+  method: 'CASH' | 'MOBILE_MONEY' | 'CARD' | 'OTHER' | string;
+  amount: number; // integer in cents
+  created_at?: string;
+}
+
+export interface Refund {
+  id: string;
+  store_id?: string;
+  sale_id: string;
+  sale_item_id: string;
+  quantity: number;
+  amount: number; // integer in cents
+  reason?: string;
+  timestamp: string;
+}
+
+export interface RegisterClosure {
+  id: string;
+  store_id?: string;
+  period_start: string;
+  period_end: string;
+  expected_cash: number; // in cents
+  counted_cash: number;  // in cents
+  variance: number;      // in cents (counted - expected)
+  notes?: string;
+  closed_at: string;
 }
 
 export interface Sale {
   id: string;
   sale_number: string;
   timestamp: string;
-  total_amount: number; // cents snapshot
+  subtotal_amount?: number; // gross line items sum in cents
+  discount_amount?: number; // discount in cents
+  discount_reason?: string;
+  total_amount: number; // net charged total in cents
   items_count: number;
   status: 'COMPLETED' | 'VOIDED';
-  payment_method?: 'CASH' | 'MOBILE_MONEY' | 'CARD' | 'OTHER';
+  payment_method?: 'CASH' | 'MOBILE_MONEY' | 'CARD' | 'OTHER' | 'SPLIT' | string;
+  payments?: SalePayment[];
+  refunds?: Refund[];
   notes?: string;
   void_reason?: string;
   voided_at?: string;
   items?: SaleItem[];
 }
 
-export type MovementReason = 'SALE' | 'RESTOCK' | 'MANUAL_ADJUSTMENT' | 'VOID_SALE';
+export type MovementReason = 'SALE' | 'RESTOCK' | 'MANUAL_ADJUSTMENT' | 'VOID_SALE' | 'REFUND';
 
 export interface StockMovement {
   id: string;
   product_id: string;
   product_name: string;
-  change_amount: number; // + for restock/void, - for sale
+  change_amount: number; // + for restock/void/refund, - for sale
   quantity_after: number;
   reason: MovementReason;
   reference_id?: string; // e.g. sale_id

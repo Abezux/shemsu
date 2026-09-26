@@ -7,7 +7,9 @@ import {
   MetricTrend, 
   HourlySalesPoint, 
   RevenueTrendPoint, 
-  StockHealthItem 
+  StockHealthItem,
+  RegisterClosure,
+  Refund
 } from '@/types';
 import { INITIAL_SAMPLE_PRODUCTS } from '@/lib/seed';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
@@ -331,7 +333,9 @@ export const api = {
 
   createSale: async (
     items: { product_id: string; quantity: number }[],
-    paymentMethod: Sale['payment_method'] = 'CASH',
+    payments?: { method: string; amount: number }[],
+    discountAmount: number = 0,
+    discountReason?: string,
     notes?: string
   ): Promise<Sale> => {
     if (isSupabaseConfigured()) {
@@ -340,7 +344,9 @@ export const api = {
         const { data, error } = await supabase.rpc('create_sale_transaction', {
           p_store_id: storeId,
           p_items: items,
-          p_payment_method: paymentMethod,
+          p_payments: payments || null,
+          p_discount_amount: discountAmount,
+          p_discount_reason: discountReason || null,
           p_notes: notes || null,
         });
 
@@ -372,7 +378,7 @@ export const api = {
       }
     }
 
-    let totalAmount = 0;
+    let subtotalAmount = 0;
     let totalItemsCount = 0;
     const saleItems: SaleItem[] = [];
 
@@ -380,7 +386,7 @@ export const api = {
       const product = products.find((p) => p.id === itemReq.product_id)!;
 
       const lineTotal = Math.round(product.price * itemReq.quantity);
-      totalAmount += lineTotal;
+      subtotalAmount += lineTotal;
       totalItemsCount += itemReq.quantity;
 
       product.stock_quantity = product.stock_quantity - itemReq.quantity;
@@ -392,6 +398,7 @@ export const api = {
         product_id: product.id,
         product_name: product.name,
         quantity: itemReq.quantity,
+        refunded_quantity: 0,
         unit_price: product.price,
         line_total: lineTotal,
         unit_type: product.unit_type || 'piece',
@@ -411,14 +418,29 @@ export const api = {
       });
     }
 
+    if (discountAmount > subtotalAmount) {
+      throw new Error(`Discount amount cannot exceed subtotal amount`);
+    }
+
+    const totalAmount = subtotalAmount - discountAmount;
+    const finalPayments = payments && payments.length > 0 
+      ? payments 
+      : [{ method: 'CASH', amount: totalAmount }];
+
+    const paymentMethod = finalPayments.length > 1 ? 'SPLIT' : finalPayments[0].method;
+
     const newSale: Sale = {
       id: saleId,
       sale_number: saleNumber,
       timestamp: now,
+      subtotal_amount: subtotalAmount,
+      discount_amount: discountAmount,
+      discount_reason: discountReason,
       total_amount: totalAmount,
       items_count: totalItemsCount,
       status: 'COMPLETED',
       payment_method: paymentMethod,
+      payments: finalPayments.map(p => ({ method: p.method, amount: p.amount })),
       notes,
       items: saleItems,
     };
@@ -429,6 +451,88 @@ export const api = {
     setLocal(MOVEMENTS_KEY, movements);
 
     return newSale;
+  },
+
+  processRefund: async (
+    saleId: string,
+    refundItems: { sale_item_id: string; quantity: number }[],
+    reason?: string
+  ): Promise<Sale> => {
+    if (isSupabaseConfigured()) {
+      const storeId = await getActiveStoreId();
+      if (storeId) {
+        const { data, error } = await supabase.rpc('process_refund_transaction', {
+          p_store_id: storeId,
+          p_sale_id: saleId,
+          p_refund_items: refundItems,
+          p_reason: reason || null,
+        });
+
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        return data as Sale;
+      }
+    }
+
+    // Local Storage Fallback
+    const products = getLocal<Product[]>(PRODUCTS_KEY, []);
+    const sales = getLocal<Sale[]>(SALES_KEY, []);
+    const movements = getLocal<StockMovement[]>(MOVEMENTS_KEY, []);
+    const refunds = getLocal<any[]>('shemsu_refunds_v1', []);
+    const now = new Date().toISOString();
+
+    const sale = sales.find((s) => s.id === saleId);
+    if (!sale || sale.status === 'VOIDED') throw new Error('Sale not found or voided');
+
+    for (const refItem of refundItems) {
+      const item = sale.items?.find((i) => i.id === refItem.sale_item_id);
+      if (!item) continue;
+
+      const availableToRefund = item.quantity - (item.refunded_quantity || 0);
+      if (refItem.quantity > availableToRefund) {
+        throw new Error(`Refund quantity exceeds available unrefunded quantity for ${item.product_name}`);
+      }
+
+      item.refunded_quantity = (item.refunded_quantity || 0) + refItem.quantity;
+      const refundAmount = Math.round(item.unit_price * refItem.quantity);
+
+      refunds.unshift({
+        id: `ref-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        sale_id: saleId,
+        sale_item_id: item.id,
+        quantity: refItem.quantity,
+        amount: refundAmount,
+        reason,
+        timestamp: now,
+      });
+
+      const product = products.find((p) => p.id === item.product_id);
+      if (product) {
+        product.stock_quantity += refItem.quantity;
+        product.updated_at = now;
+
+        movements.unshift({
+          id: `sm-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+          product_id: product.id,
+          product_name: product.name,
+          change_amount: refItem.quantity,
+          quantity_after: product.stock_quantity,
+          reason: 'REFUND',
+          reference_id: saleId,
+          note: `Refunded ${refItem.quantity} units: ${reason || 'No reason'}`,
+          timestamp: now,
+        });
+      }
+    }
+
+    setLocal(PRODUCTS_KEY, products);
+    setLocal(SALES_KEY, sales);
+    setLocal(MOVEMENTS_KEY, movements);
+    setLocal('shemsu_refunds_v1', refunds);
+
+    return sale;
   },
 
   voidSale: async (saleId: string, reason: string): Promise<Sale> => {
@@ -464,15 +568,17 @@ export const api = {
     if (sale.items) {
       for (const item of sale.items) {
         const product = products.find((p) => p.id === item.product_id);
-        if (product) {
-          product.stock_quantity += item.quantity;
+        const unrefundedQty = item.quantity - (item.refunded_quantity || 0);
+
+        if (product && unrefundedQty > 0) {
+          product.stock_quantity += unrefundedQty;
           product.updated_at = now;
 
           movements.unshift({
             id: `sm-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
             product_id: product.id,
             product_name: product.name,
-            change_amount: item.quantity,
+            change_amount: unrefundedQty,
             quantity_after: product.stock_quantity,
             reason: 'VOID_SALE',
             reference_id: sale.id,
@@ -810,4 +916,172 @@ export const api = {
       return a.ratio - b.ratio;
     });
   },
+
+  // Register Closure & Cash Reconciliation
+  getRegisterClosures: async (): Promise<RegisterClosure[]> => {
+    if (isSupabaseConfigured()) {
+      const storeId = await getActiveStoreId();
+      if (!storeId) return getLocal<RegisterClosure[]>('shemsu_closures_v1', []);
+
+      const { data, error } = await supabase
+        .from('register_closures')
+        .select('*')
+        .eq('store_id', storeId)
+        .order('closed_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching closures:', error);
+        return getLocal<RegisterClosure[]>('shemsu_closures_v1', []);
+      }
+      return (data || []) as RegisterClosure[];
+    }
+    return getLocal<RegisterClosure[]>('shemsu_closures_v1', []);
+  },
+
+  getExpectedCash: async (): Promise<{
+    expectedCash: number;
+    totalCashSales: number;
+    totalCashRefunds: number;
+    periodStart: string;
+  }> => {
+    const closures = await api.getRegisterClosures();
+    const lastClosure = closures[0];
+    const periodStart = lastClosure ? lastClosure.closed_at : new Date(0).toISOString();
+
+    const sales = await api.getSales();
+    const periodStartMs = new Date(periodStart).getTime();
+
+    let totalCashSales = 0;
+    let totalCashRefunds = 0;
+
+    sales.forEach((s) => {
+      const t = new Date(s.timestamp).getTime();
+      if (t < periodStartMs || s.status === 'VOIDED') return;
+
+      if (s.payments && s.payments.length > 0) {
+        s.payments.forEach((p) => {
+          if (p.method === 'CASH') {
+            totalCashSales += p.amount;
+          }
+        });
+      } else if (s.payment_method === 'CASH') {
+        totalCashSales += s.total_amount;
+      }
+
+      if (s.items) {
+        s.items.forEach((item) => {
+          if (item.refunded_quantity && item.refunded_quantity > 0) {
+            // Include cash refunds if payment method was cash
+            if (s.payment_method === 'CASH') {
+              totalCashRefunds += Math.round(item.unit_price * item.refunded_quantity);
+            }
+          }
+        });
+      }
+    });
+
+    const expectedCash = Math.max(0, totalCashSales - totalCashRefunds);
+    return {
+      expectedCash,
+      totalCashSales,
+      totalCashRefunds,
+      periodStart,
+    };
+  },
+
+  closeRegister: async (countedCash: number, notes?: string): Promise<RegisterClosure> => {
+    const { expectedCash, periodStart } = await api.getExpectedCash();
+    const variance = countedCash - expectedCash;
+    const now = new Date().toISOString();
+
+    if (isSupabaseConfigured()) {
+      const storeId = await getActiveStoreId();
+      if (storeId) {
+        const { data, error } = await supabase
+          .from('register_closures')
+          .insert({
+            store_id: storeId,
+            period_start: periodStart,
+            period_end: now,
+            expected_cash: expectedCash,
+            counted_cash: countedCash,
+            variance,
+            notes: notes || null,
+            closed_at: now,
+          })
+          .select('*')
+          .single();
+
+        if (error) throw new Error(error.message);
+        return data as RegisterClosure;
+      }
+    }
+
+    const closures = getLocal<RegisterClosure[]>('shemsu_closures_v1', []);
+    const newClosure: RegisterClosure = {
+      id: `closure-${Date.now()}`,
+      period_start: periodStart,
+      period_end: now,
+      expected_cash: expectedCash,
+      counted_cash: countedCash,
+      variance,
+      notes,
+      closed_at: now,
+    };
+
+    closures.unshift(newClosure);
+    setLocal('shemsu_closures_v1', closures);
+    return newClosure;
+  },
+
+  // Smart Restock Suggestions Calculation
+  getSmartRestockSuggestions: (products: Product[], sales: Sale[]): Record<string, number> => {
+    const cutoff = Date.now() - 30 * 86400000;
+    const productSalesMap: Record<string, number> = {};
+
+    sales.forEach((s) => {
+      if (s.status === 'VOIDED' || new Date(s.timestamp).getTime() < cutoff) return;
+      s.items?.forEach((item) => {
+        if (!item.product_id) return;
+        const netQty = item.quantity - (item.refunded_quantity || 0);
+        productSalesMap[item.product_id] = (productSalesMap[item.product_id] || 0) + Math.max(0, netQty);
+      });
+    });
+
+    const suggestions: Record<string, number> = {};
+
+    products.forEach((p) => {
+      const totalSold30Days = productSalesMap[p.id] || 0;
+      const avgDaily = totalSold30Days / 30;
+      const weeklyBuffer = Math.ceil(avgDaily * 7);
+
+      // Floor suggestion at low_stock_threshold
+      const suggested = Math.max(p.low_stock_threshold, weeklyBuffer > 0 ? weeklyBuffer : p.low_stock_threshold);
+      suggestions[p.id] = suggested;
+    });
+
+    return suggestions;
+  },
+
+  // Top 6 Favorites Quick Access Row
+  getTopFavorites: (products: Product[], sales: Sale[]): Product[] => {
+    const productSalesMap: Record<string, number> = {};
+
+    sales.forEach((s) => {
+      if (s.status === 'VOIDED') return;
+      s.items?.forEach((item) => {
+        if (!item.product_id) return;
+        productSalesMap[item.product_id] = (productSalesMap[item.product_id] || 0) + item.quantity;
+      });
+    });
+
+    const sortedProducts = [...products].sort((a, b) => {
+      const countA = productSalesMap[a.id] || 0;
+      const countB = productSalesMap[b.id] || 0;
+      return countB - countA;
+    });
+
+    return sortedProducts.slice(0, 6);
+  },
 };
+

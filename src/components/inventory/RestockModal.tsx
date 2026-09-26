@@ -8,6 +8,7 @@ import ProductAvatar from '@/components/common/ProductAvatar';
 interface RestockModalProps {
   isOpen: boolean;
   product: Product | null;
+  suggestedQuantity?: number;
   onClose: () => void;
   onRestock: (productId: string, addQuantity: number, note?: string) => Promise<void>;
 }
@@ -15,6 +16,7 @@ interface RestockModalProps {
 export default function RestockModal({
   isOpen,
   product,
+  suggestedQuantity,
   onClose,
   onRestock,
 }: RestockModalProps) {
@@ -24,11 +26,11 @@ export default function RestockModal({
 
   useEffect(() => {
     if (isOpen) {
-      setAddQuantity(10);
+      setAddQuantity(suggestedQuantity && suggestedQuantity > 0 ? suggestedQuantity : 10);
       setNote('');
       setIsSubmitting(false);
     }
-  }, [isOpen]);
+  }, [isOpen, suggestedQuantity]);
 
   if (!isOpen || !product) return null;
 
@@ -85,9 +87,20 @@ export default function RestockModal({
 
           {/* Quick Presets */}
           <div>
-            <label className="block text-xs font-bold text-agora-ink mb-2">
-              Quick Add Quantity
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-bold text-agora-ink">
+                Quick Add Quantity
+              </label>
+              {suggestedQuantity && suggestedQuantity > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setAddQuantity(suggestedQuantity)}
+                  className="text-[11px] font-bold text-agora-terracotta bg-agora-terracotta-light px-2 py-0.5 rounded-full border border-agora-terracotta-border hover:underline"
+                >
+                  Suggested: +{suggestedQuantity}
+                </button>
+              )}
+            </div>
             <div className="grid grid-cols-4 gap-2">
               {[5, 10, 24, 50].map((qty) => (
                 <button

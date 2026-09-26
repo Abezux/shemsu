@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Product, StoreSettings } from '@/types';
+import { Product, StoreSettings, Sale } from '@/types';
 import { api } from '@/services/api';
 import { formatCurrency } from '@/utils/currency';
 import AddEditProductModal from '@/components/inventory/AddEditProductModal';
@@ -21,6 +21,7 @@ import ProductAvatar from '@/components/common/ProductAvatar';
 
 export default function InventoryView() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [sales, setSales] = useState<Sale[]>([]);
   const [settings, setSettings] = useState<StoreSettings>({
     store_name: 'Agora Kiosk',
     currency_symbol: '$',
@@ -47,9 +48,10 @@ export default function InventoryView() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [prods, stgs] = await Promise.all([api.getProducts(), api.getSettings()]);
+      const [prods, stgs, salesData] = await Promise.all([api.getProducts(), api.getSettings(), api.getSales()]);
       setProducts(prods);
       setSettings(stgs);
+      setSales(salesData);
     } catch (err) {
       console.error('Error loading products:', err);
     } finally {
@@ -60,6 +62,10 @@ export default function InventoryView() {
   useEffect(() => {
     loadData();
   }, []);
+
+  const restockSuggestions = useMemo(() => {
+    return api.getSmartRestockSuggestions(products, sales);
+  }, [products, sales]);
 
   const categories = useMemo(() => {
     const set = new Set<string>();
@@ -348,7 +354,7 @@ export default function InventoryView() {
                       <td className="p-3 sm:p-4 space-y-1">
                         {expDate && (
                           <span
-                            className={`px-2 py-0.5 rounded-md text-[10px] font-bold inline-flex items-center gap-1 ${
+                            className={`px-2 py-0.5 rounded-md text-[10px] font-bold inline-flex items-center gap-1 block w-max ${
                               isExpiring
                                 ? 'bg-agora-brick-light border border-agora-brick-border text-agora-brick'
                                 : 'bg-agora-bg border border-agora-border text-agora-ink-muted'
@@ -358,10 +364,15 @@ export default function InventoryView() {
                           </span>
                         )}
 
-                        {isLow && !isExpiring && (
-                          <span className="px-2 py-0.5 rounded-full bg-agora-terracotta-light text-agora-terracotta border border-agora-terracotta-border text-[10px] font-bold inline-block">
-                            Low Stock (≤{p.low_stock_threshold})
-                          </span>
+                        {(isLow || isOut) && (
+                          <div className="space-y-1">
+                            <span className="px-2 py-0.5 rounded-full bg-agora-terracotta-light text-agora-terracotta border border-agora-terracotta-border text-[10px] font-bold inline-block">
+                              {isOut ? 'Out of Stock' : `Low Stock (≤${p.low_stock_threshold})`}
+                            </span>
+                            <span className="text-[10px] font-bold text-agora-terracotta block">
+                              Suggested reorder: +{restockSuggestions[p.id] || p.low_stock_threshold}
+                            </span>
+                          </div>
                         )}
                       </td>
 
@@ -407,6 +418,7 @@ export default function InventoryView() {
       <RestockModal
         isOpen={isRestockOpen}
         product={productToRestock}
+        suggestedQuantity={productToRestock ? restockSuggestions[productToRestock.id] : undefined}
         onClose={() => setIsRestockOpen(false)}
         onRestock={handleRestockProduct}
       />
