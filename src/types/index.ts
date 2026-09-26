@@ -92,7 +92,7 @@ export interface Sale {
   discount_reason?: string;
   total_amount: number; // net charged total in cents
   items_count: number;
-  status: 'COMPLETED' | 'VOIDED';
+  status: 'COMPLETED' | 'VOIDED' | 'REFUNDED' | 'PARTIALLY_REFUNDED';
   payment_method?: 'CASH' | 'MOBILE_MONEY' | 'CARD' | 'OTHER' | 'SPLIT' | string;
   payments?: SalePayment[];
   refunds?: Refund[];

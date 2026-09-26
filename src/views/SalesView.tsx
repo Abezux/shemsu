@@ -3,9 +3,10 @@ import { Sale, StoreSettings } from '@/types';
 import { api } from '@/services/api';
 import { formatCurrency } from '@/utils/currency';
 import { formatDate, isToday } from '@/utils/formatters';
+import { calculateNetRevenue } from '@/utils/revenue';
 import SaleDetailModal from '@/components/sales/SaleDetailModal';
 import VoidSaleModal from '@/components/sales/VoidSaleModal';
-import { History, Receipt, CheckCircle, Ban, Search, DollarSign } from 'lucide-react';
+import { History, Receipt, CheckCircle, Ban, Search, DollarSign, RotateCcw, RefreshCw } from 'lucide-react';
 
 export default function SalesView() {
   const [sales, setSales] = useState<Sale[]>([]);
@@ -19,6 +20,7 @@ export default function SalesView() {
     custom_attributes: [],
   });
   const [dateFilter, setDateFilter] = useState<'TODAY' | 'YESTERDAY' | 'THIS_WEEK' | 'ALL'>('TODAY');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'COMPLETED' | 'PARTIALLY_REFUNDED' | 'REFUNDED' | 'VOIDED'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -58,6 +60,8 @@ export default function SalesView() {
       if (dateFilter === 'YESTERDAY' && (time < yesterdayStart || time >= todayStart)) return false;
       if (dateFilter === 'THIS_WEEK' && time < weekStart) return false;
 
+      if (statusFilter !== 'ALL' && s.status !== statusFilter) return false;
+
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         const matchesReceipt = s.sale_number.toLowerCase().includes(query);
@@ -68,12 +72,10 @@ export default function SalesView() {
 
       return true;
     });
-  }, [sales, dateFilter, searchQuery]);
+  }, [sales, dateFilter, statusFilter, searchQuery]);
 
-  const totalCompletedRevenueCents = useMemo(() => {
-    return filteredSales
-      .filter((s) => s.status === 'COMPLETED')
-      .reduce((sum, s) => sum + s.total_amount, 0);
+  const totalNetRevenueCents = useMemo(() => {
+    return calculateNetRevenue(filteredSales);
   }, [filteredSales]);
 
   const completedSalesCount = useMemo(() => {
@@ -127,13 +129,13 @@ export default function SalesView() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 sm:gap-3">
         <div className="ledger-card p-3 sm:p-4">
           <div className="flex items-center justify-between text-agora-ink-muted text-xs font-bold">
-            <span>Total Revenue</span>
+            <span>Net Revenue</span>
             <DollarSign className="w-4 h-4 text-agora-terracotta" />
           </div>
           <div className="text-xl sm:text-2xl font-serif font-black text-agora-terracotta mt-1.5">
-            {formatCurrency(totalCompletedRevenueCents, settings.currency_symbol)}
+            {formatCurrency(totalNetRevenueCents, settings.currency_symbol)}
           </div>
-          <span className="text-[10px] text-agora-ink-muted">Completed sales</span>
+          <span className="text-[10px] text-agora-ink-muted">Gross minus refunds</span>
         </div>
 
         <div className="ledger-card p-3 sm:p-4">
@@ -142,7 +144,7 @@ export default function SalesView() {
             <CheckCircle className="w-4 h-4 text-agora-sage" />
           </div>
           <div className="text-xl sm:text-2xl font-serif font-black text-agora-ink mt-1.5">{completedSalesCount}</div>
-          <span className="text-[10px] text-agora-ink-muted">Completed transactions</span>
+          <span className="text-[10px] text-agora-ink-muted">Active transactions</span>
         </div>
 
         <div className="ledger-card p-3 sm:p-4 border-agora-brick-border bg-agora-brick-light/30">
@@ -168,25 +170,50 @@ export default function SalesView() {
             />
           </div>
 
-          <div className="flex items-center gap-1 overflow-x-auto w-full sm:w-auto scrollbar-none">
-            {[
-              { id: 'TODAY', label: 'Today' },
-              { id: 'YESTERDAY', label: 'Yesterday' },
-              { id: 'THIS_WEEK', label: 'This Week' },
-              { id: 'ALL', label: 'All' },
-            ].map((f) => (
-              <button
-                key={f.id}
-                onClick={() => setDateFilter(f.id as any)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-                  dateFilter === f.id
-                    ? 'bg-agora-terracotta text-agora-card'
-                    : 'bg-agora-card border border-agora-border text-agora-ink-muted hover:text-agora-ink'
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
+          {/* Date & Status Filters */}
+          <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
+            <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
+              {[
+                { id: 'TODAY', label: 'Today' },
+                { id: 'YESTERDAY', label: 'Yesterday' },
+                { id: 'THIS_WEEK', label: 'This Week' },
+                { id: 'ALL', label: 'All' },
+              ].map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => setDateFilter(f.id as any)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                    dateFilter === f.id
+                      ? 'bg-agora-terracotta text-agora-card'
+                      : 'bg-agora-card border border-agora-border text-agora-ink-muted hover:text-agora-ink'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-1 overflow-x-auto scrollbar-none pl-2 border-l border-agora-border">
+              {[
+                { id: 'ALL', label: 'All Status' },
+                { id: 'COMPLETED', label: 'Completed' },
+                { id: 'PARTIALLY_REFUNDED', label: 'Partial Refund' },
+                { id: 'REFUNDED', label: 'Fully Refunded' },
+                { id: 'VOIDED', label: 'Voided' },
+              ].map((sf) => (
+                <button
+                  key={sf.id}
+                  onClick={() => setStatusFilter(sf.id as any)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-all ${
+                    statusFilter === sf.id
+                      ? 'bg-agora-brass text-agora-card'
+                      : 'bg-agora-bg border border-agora-border text-agora-ink-muted hover:text-agora-ink'
+                  }`}
+                >
+                  {sf.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -222,6 +249,8 @@ export default function SalesView() {
               ) : (
                 filteredSales.map((sale) => {
                   const isVoided = sale.status === 'VOIDED';
+                  const isPartiallyRefunded = sale.status === 'PARTIALLY_REFUNDED';
+                  const isFullyRefunded = sale.status === 'REFUNDED';
 
                   return (
                     <tr
@@ -256,9 +285,17 @@ export default function SalesView() {
                           <span className="px-2 py-0.5 rounded-full bg-agora-brick-light border border-agora-brick-border text-agora-brick text-[11px] font-bold inline-flex items-center gap-1">
                             <Ban className="w-3 h-3" /> Voided
                           </span>
+                        ) : isFullyRefunded ? (
+                          <span className="px-2 py-0.5 rounded-full bg-agora-brick-light border border-agora-brick-border text-agora-brick text-[11px] font-bold inline-flex items-center gap-1">
+                            <RotateCcw className="w-3 h-3" /> Refunded
+                          </span>
+                        ) : isPartiallyRefunded ? (
+                          <span className="px-2 py-0.5 rounded-full bg-agora-brass/10 border border-agora-brass/30 text-agora-brass text-[11px] font-bold inline-flex items-center gap-1">
+                            <RefreshCw className="w-3 h-3" /> Partial Refund
+                          </span>
                         ) : (
                           <span className="px-2 py-0.5 rounded-full bg-agora-sage-light border border-agora-sage-border text-agora-sage text-[11px] font-bold inline-flex items-center gap-1">
-                            <CheckCircle className="w-3 h-3" /> Done
+                            <CheckCircle className="w-3 h-3" /> Completed
                           </span>
                         )}
                       </td>

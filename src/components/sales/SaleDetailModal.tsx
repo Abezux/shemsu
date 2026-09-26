@@ -91,34 +91,47 @@ export default function SaleDetailModal({
 
         <div className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
           {/* Status Badge Banner */}
-          <div
-            className={`p-3.5 rounded-2xl border flex items-center justify-between ${
-              isVoided
-                ? 'bg-agora-brick/10 border-agora-brick/30 text-agora-brick'
-                : 'bg-agora-sage/10 border-agora-sage/30 text-agora-sage'
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              {isVoided ? (
-                <Ban className="w-5 h-5 text-agora-brick" />
-              ) : (
-                <CheckCircle className="w-5 h-5 text-agora-sage" />
-              )}
-              <div>
-                <span className="font-bold text-xs uppercase tracking-wider block">
-                  Status: {sale.status}
+          {(() => {
+            const isPartiallyRefunded = sale.status === 'PARTIALLY_REFUNDED';
+            const isFullyRefunded = sale.status === 'REFUNDED';
+
+            return (
+              <div
+                className={`p-3.5 rounded-2xl border flex items-center justify-between ${
+                  isVoided || isFullyRefunded
+                    ? 'bg-agora-brick/10 border-agora-brick/30 text-agora-brick'
+                    : isPartiallyRefunded
+                    ? 'bg-agora-brass/10 border-agora-brass/30 text-agora-brass'
+                    : 'bg-agora-sage/10 border-agora-sage/30 text-agora-sage'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  {isVoided ? (
+                    <Ban className="w-5 h-5 text-agora-brick" />
+                  ) : isFullyRefunded ? (
+                    <RotateCcw className="w-5 h-5 text-agora-brick" />
+                  ) : isPartiallyRefunded ? (
+                    <RefreshCw className="w-5 h-5 text-agora-brass" />
+                  ) : (
+                    <CheckCircle className="w-5 h-5 text-agora-sage" />
+                  )}
+                  <div>
+                    <span className="font-bold text-xs uppercase tracking-wider block">
+                      Status: {sale.status.replace('_', ' ')}
+                    </span>
+                    {isVoided && (
+                      <span className="text-xs text-agora-brick">
+                        Reason: {sale.void_reason || 'No reason specified'}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-agora-card border border-agora-border text-agora-ink">
+                  {sale.payment_method || 'CASH'}
                 </span>
-                {isVoided && (
-                  <span className="text-xs text-agora-brick">
-                    Reason: {sale.void_reason || 'No reason specified'}
-                  </span>
-                )}
               </div>
-            </div>
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-agora-card border border-agora-border text-agora-ink">
-              {sale.payment_method || 'CASH'}
-            </span>
-          </div>
+            );
+          })()}
 
           {/* Line Items Table with Partial Refunds */}
           <div className="bg-agora-bg rounded-2xl border border-agora-border overflow-hidden">

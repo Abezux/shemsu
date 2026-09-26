@@ -388,6 +388,8 @@ DECLARE
   v_sale_item RECORD;
   v_product RECORD;
   v_refund_amount INT;
+  v_total_qty NUMERIC := 0;
+  v_total_refunded_qty NUMERIC := 0;
   v_now TIMESTAMPTZ := NOW();
   v_result JSONB;
 BEGIN
@@ -471,6 +473,20 @@ BEGIN
       gen_random_uuid(), p_store_id, p_sale_id, v_sale_item.id, v_ref_item.quantity, v_refund_amount, p_reason, v_now
     );
   END LOOP;
+
+  -- 4. Evaluate overall refund status for sale
+  SELECT 
+    COALESCE(SUM(quantity), 0),
+    COALESCE(SUM(refunded_quantity), 0)
+  INTO v_total_qty, v_total_refunded_qty
+  FROM public.sale_items
+  WHERE sale_id = p_sale_id;
+
+  IF v_total_refunded_qty >= v_total_qty THEN
+    UPDATE public.sales SET status = 'REFUNDED' WHERE id = p_sale_id;
+  ELSIF v_total_refunded_qty > 0 THEN
+    UPDATE public.sales SET status = 'PARTIALLY_REFUNDED' WHERE id = p_sale_id;
+  END IF;
 
   -- 4. Return updated sale JSON
   SELECT jsonb_build_object(
@@ -611,6 +627,82 @@ BEGIN
   ) INTO v_result
   FROM public.sales s
   WHERE s.id = p_sale_id;
+
+  RETURN v_result;
+END;
+$$;
+
+-- Atomic Register Closure Transaction (Computes expected cash & variance server-side)
+CREATE OR REPLACE FUNCTION public.close_register_transaction(
+  p_store_id UUID,
+  p_period_start TIMESTAMPTZ,
+  p_counted_cash INT,
+  p_notes TEXT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_user_id UUID;
+  v_total_cash_sales INT := 0;
+  v_total_cash_refunds INT := 0;
+  v_expected_cash INT := 0;
+  v_variance INT := 0;
+  v_now TIMESTAMPTZ := NOW();
+  v_closure_id UUID := gen_random_uuid();
+  v_result JSONB;
+BEGIN
+  -- 1. Security Check
+  v_user_id := auth.uid();
+  IF v_user_id IS NULL OR NOT public.is_store_owner(p_store_id) THEN
+    RAISE EXCEPTION 'Unauthorized: You do not own store %', p_store_id;
+  END IF;
+
+  -- 2. Compute total cash sales collected since p_period_start
+  SELECT COALESCE(SUM(sp.amount), 0)
+  INTO v_total_cash_sales
+  FROM public.sale_payments sp
+  JOIN public.sales s ON s.id = sp.sale_id
+  WHERE sp.store_id = p_store_id
+    AND sp.method = 'CASH'
+    AND s.status != 'VOIDED'
+    AND sp.created_at >= p_period_start;
+
+  -- 3. Compute total cash refunds paid out since p_period_start
+  SELECT COALESCE(SUM(r.amount), 0)
+  INTO v_total_cash_refunds
+  FROM public.refunds r
+  JOIN public.sale_payments sp ON sp.sale_id = r.sale_id
+  WHERE r.store_id = p_store_id
+    AND sp.method = 'CASH'
+    AND r.timestamp >= p_period_start;
+
+  -- 4. Calculate expected cash and variance
+  v_expected_cash := GREATEST(0, v_total_cash_sales - v_total_cash_refunds);
+  v_variance := p_counted_cash - v_expected_cash;
+
+  -- 5. Insert closure record
+  INSERT INTO public.register_closures (
+    id, store_id, period_start, period_end, expected_cash, counted_cash, variance, notes, closed_at
+  ) VALUES (
+    v_closure_id, p_store_id, p_period_start, v_now, v_expected_cash, p_counted_cash, v_variance, p_notes, v_now
+  );
+
+  -- 6. Construct & Return closure JSON
+  SELECT jsonb_build_object(
+    'id', rc.id,
+    'store_id', rc.store_id,
+    'period_start', rc.period_start,
+    'period_end', rc.period_end,
+    'expected_cash', rc.expected_cash,
+    'counted_cash', rc.counted_cash,
+    'variance', rc.variance,
+    'notes', rc.notes,
+    'closed_at', rc.closed_at
+  ) INTO v_result
+  FROM public.register_closures rc
+  WHERE rc.id = v_closure_id;
 
   RETURN v_result;
 END;

@@ -528,6 +528,15 @@ export const api = {
       }
     }
 
+    const totalQty = sale.items?.reduce((sum, i) => sum + i.quantity, 0) || 0;
+    const totalRefundedQty = sale.items?.reduce((sum, i) => sum + (i.refunded_quantity || 0), 0) || 0;
+
+    if (totalRefundedQty >= totalQty && totalQty > 0) {
+      sale.status = 'REFUNDED';
+    } else if (totalRefundedQty > 0) {
+      sale.status = 'PARTIALLY_REFUNDED';
+    }
+
     setLocal(PRODUCTS_KEY, products);
     setLocal(SALES_KEY, sales);
     setLocal(MOVEMENTS_KEY, movements);
@@ -1000,7 +1009,20 @@ export const api = {
     if (isSupabaseConfigured()) {
       const storeId = await getActiveStoreId();
       if (storeId) {
-        const { data, error } = await supabase
+        const { expectedCash, periodStart } = await api.getExpectedCash();
+        const { data, error } = await supabase.rpc('close_register_transaction', {
+          p_store_id: storeId,
+          p_period_start: periodStart,
+          p_counted_cash: countedCash,
+          p_notes: notes || null,
+        });
+
+        if (!error && data) {
+          return data as RegisterClosure;
+        }
+
+        // Fallback to direct insert if RPC is not present
+        const { data: directData, error: directError } = await supabase
           .from('register_closures')
           .insert({
             store_id: storeId,
@@ -1015,8 +1037,8 @@ export const api = {
           .select('*')
           .single();
 
-        if (error) throw new Error(error.message);
-        return data as RegisterClosure;
+        if (directError) throw new Error(directError.message);
+        return directData as RegisterClosure;
       }
     }
 
