@@ -3,6 +3,7 @@ import { Sale, Product, StoreSettings, RegisterClosure } from '@/types';
 import { api } from '@/services/api';
 import { formatCurrency } from '@/utils/currency';
 import { formatDate } from '@/utils/formatters';
+import { getSaleItemNetTotal } from '@/utils/revenue';
 import DrilldownModal from '@/components/analytics/DrilldownModal';
 import RegisterClosureModal from '@/components/reports/RegisterClosureModal';
 import {
@@ -113,11 +114,12 @@ export default function AnalyticsView() {
   const categoryChartData = useMemo(() => {
     const map: Record<string, number> = {};
     sales.forEach((s) => {
-      if (s.status !== 'COMPLETED') return;
+      if (s.status === 'VOIDED') return;
       s.items?.forEach((item) => {
         const prod = products.find((p) => p.id === item.product_id);
         const cat = prod?.category || 'General';
-        map[cat] = (map[cat] || 0) + item.line_total;
+        const itemNet = getSaleItemNetTotal(item);
+        map[cat] = (map[cat] || 0) + itemNet;
       });
     });
 

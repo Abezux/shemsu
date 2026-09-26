@@ -13,6 +13,7 @@ import {
 } from '@/types';
 import { INITIAL_SAMPLE_PRODUCTS } from '@/lib/seed';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { getSaleNetRevenue } from '@/utils/revenue';
 
 const PRODUCTS_KEY = 'shemsu_products_v1';
 const SALES_KEY = 'shemsu_sales_v1';
@@ -768,15 +769,16 @@ export const api = {
     let prevRev = 0, prevSales = 0, prevUnits = 0;
 
     sales.forEach((s) => {
-      if (s.status !== 'COMPLETED') return;
+      if (s.status === 'VOIDED') return;
       const t = new Date(s.timestamp).getTime();
+      const netRev = getSaleNetRevenue(s);
 
       if (t >= currentStart) {
-        curRev += s.total_amount;
+        curRev += netRev;
         curSales += 1;
         curUnits += s.items_count;
       } else if (t >= previousStart && t < currentStart) {
-        prevRev += s.total_amount;
+        prevRev += netRev;
         prevSales += 1;
         prevUnits += s.items_count;
       }
@@ -822,10 +824,11 @@ export const api = {
       let prevRev = 0;
 
       sales.forEach((s) => {
-        if (s.status !== 'COMPLETED') return;
+        if (s.status === 'VOIDED') return;
         const dStr = new Date(s.timestamp).toDateString();
-        if (dStr === targetDateStr) currentRev += s.total_amount;
-        if (dStr === prevDateStr) prevRev += s.total_amount;
+        const netRev = getSaleNetRevenue(s);
+        if (dStr === targetDateStr) currentRev += netRev;
+        if (dStr === prevDateStr) prevRev += netRev;
       });
 
       points.push({
@@ -848,14 +851,14 @@ export const api = {
     const cutoff = new Date(Date.now() - daysRange * 86400000).getTime();
 
     sales.forEach((s) => {
-      if (s.status !== 'COMPLETED') return;
+      if (s.status === 'VOIDED') return;
       const d = new Date(s.timestamp);
       if (d.getTime() < cutoff) return;
 
       const hour = d.getHours();
       if (hoursMap[hour] !== undefined) {
         hoursMap[hour].count += 1;
-        hoursMap[hour].revenue += s.total_amount;
+        hoursMap[hour].revenue += getSaleNetRevenue(s);
       }
     });
 
