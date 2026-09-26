@@ -57,7 +57,7 @@ function AppContent() {
       <Navbar activeTab={activeTab} onNavigate={navigateTo} />
       <div className="flex-1 flex min-h-0 w-full overflow-hidden">
         <Sidebar activeTab={activeTab} onNavigate={navigateTo} />
-        <main className="flex-1 min-w-0 p-3 sm:p-4 md:p-6 overflow-y-auto pb-20 md:pb-6 h-full">
+        <main className="flex-1 min-w-0 p-3 sm:p-4 md:p-6 overflow-y-auto pb-20 lg:pb-6 h-full">
           {activeTab === 'sell' && <SellPage />}
           {activeTab === 'inventory' && <InventoryPage />}
           {activeTab === 'sales' && <SalesHistoryPage />}

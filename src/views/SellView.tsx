@@ -1,10 +1,22 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Product, CartItem, Sale, StoreSettings } from '@/types';
 import { api } from '@/services/api';
 import ProductTile from '@/components/pos/ProductTile';
 import CartDrawer from '@/components/pos/CartDrawer';
 import CheckoutModal from '@/components/pos/CheckoutModal';
-import { Search, AlertTriangle, Sparkles, ShoppingCart, RefreshCw } from 'lucide-react';
+import { formatCurrency } from '@/utils/currency';
+import { 
+  Search, 
+  AlertTriangle, 
+  Sparkles, 
+  ShoppingCart, 
+  RefreshCw, 
+  ShoppingBag, 
+  ChevronUp, 
+  ChevronDown, 
+  X,
+  ArrowRight
+} from 'lucide-react';
 
 export default function SellView() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -22,8 +34,15 @@ export default function SellView() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showLowStockOnly, setShowLowStockOnly] = useState<boolean>(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState<boolean>(false);
+  const [isCartSheetOpen, setIsCartSheetOpen] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [warningMessage, setWarningMessage] = useState<string | null>(null);
+
+  // Pull to refresh gesture state
+  const catalogRef = useRef<HTMLDivElement>(null);
+  const touchStartY = useRef<number>(0);
+  const [pullDistance, setPullDistance] = useState<number>(0);
+  const [isPullRefreshing, setIsPullRefreshing] = useState<boolean>(false);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -68,6 +87,16 @@ export default function SellView() {
       return matchesCategory && matchesSearch && matchesLowStock;
     });
   }, [products, selectedCategory, searchQuery, showLowStockOnly]);
+
+  const totalCartItems = useMemo(
+    () => cart.reduce((sum, item) => sum + item.quantity, 0),
+    [cart]
+  );
+
+  const totalCartAmountInCents = useMemo(
+    () => cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0),
+    [cart]
+  );
 
   const handleAddToCart = (product: Product) => {
     setCart((prevCart) => {
@@ -125,6 +154,7 @@ export default function SellView() {
 
     const sale = await api.createSale(saleItems, paymentMethod, notes);
     setCart([]);
+    setIsCartSheetOpen(false);
     await loadData();
     return sale;
   };
@@ -134,8 +164,36 @@ export default function SellView() {
     [products]
   );
 
+  // Pull-to-refresh handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (catalogRef.current && catalogRef.current.scrollTop === 0) {
+      touchStartY.current = e.touches[0].clientY;
+    } else {
+      touchStartY.current = 0;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartY.current === 0) return;
+    const currentY = e.touches[0].clientY;
+    const diff = currentY - touchStartY.current;
+    if (diff > 0 && catalogRef.current && catalogRef.current.scrollTop === 0) {
+      setPullDistance(Math.min(diff * 0.4, 80));
+    }
+  };
+
+  const handleTouchEnd = async () => {
+    if (pullDistance >= 60) {
+      setIsPullRefreshing(true);
+      await loadData();
+      setIsPullRefreshing(false);
+    }
+    setPullDistance(0);
+    touchStartY.current = 0;
+  };
+
   return (
-    <div className="h-full flex flex-col lg:flex-row gap-4 sm:gap-5 overflow-hidden">
+    <div className="h-full flex flex-col lg:flex-row gap-4 sm:gap-5 overflow-hidden relative">
       {/* Products Area (Left) — Filter fixed at top, Grid scrolls internally */}
       <div className="flex-1 flex flex-col space-y-3 sm:space-y-4 min-w-0 h-full overflow-hidden">
         {warningMessage && (
@@ -206,8 +264,28 @@ export default function SellView() {
           </div>
         </div>
 
-        {/* Product Catalog Grid (Scrolls internally when catalog has 30+ items) */}
-        <div className="flex-1 overflow-y-auto pr-1 min-h-0">
+        {/* Pull to refresh visual indicator */}
+        {(pullDistance > 0 || isPullRefreshing) && (
+          <div className="flex items-center justify-center gap-2 text-xs font-bold text-agora-terracotta py-1 shrink-0 animate-in fade-in duration-150">
+            <RefreshCw className={`w-4 h-4 ${isPullRefreshing || pullDistance >= 60 ? 'animate-spin' : ''}`} />
+            <span>
+              {isPullRefreshing
+                ? 'Refreshing catalog...'
+                : pullDistance >= 60
+                ? 'Release to refresh'
+                : 'Pull down to refresh'}
+            </span>
+          </div>
+        )}
+
+        {/* Product Catalog Grid (Scrolls internally) */}
+        <div
+          ref={catalogRef}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          className="flex-1 overflow-y-auto pr-1 min-h-0 pb-16 lg:pb-0"
+        >
           {isLoading ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3 animate-pulse">
               {[...Array(8)].map((_, i) => (
@@ -257,8 +335,8 @@ export default function SellView() {
         </div>
       </div>
 
-      {/* Cart Drawer (Right) — Pinned Fixed Height Viewport Column */}
-      <div className="w-full lg:w-80 xl:w-96 shrink-0 h-[460px] lg:h-full flex flex-col">
+      {/* Desktop Cart Register Column (lg: 1024px and up) */}
+      <div className="hidden lg:flex lg:w-80 xl:w-96 shrink-0 h-full flex-col">
         <CartDrawer
           cart={cart}
           currencySymbol={settings.currency_symbol}
@@ -268,6 +346,75 @@ export default function SellView() {
           onProceedToCheckout={() => setIsCheckoutOpen(true)}
         />
       </div>
+
+      {/* Mobile/Tablet Floating Bottom Cart Bar (< lg) */}
+      {cart.length > 0 && (
+        <div
+          onClick={() => setIsCartSheetOpen(true)}
+          className="lg:hidden fixed bottom-14 left-3 right-3 z-30 bg-agora-terracotta text-agora-card rounded-2xl shadow-xl px-4 py-3 flex items-center justify-between cursor-pointer active:scale-[0.99] transition-all border border-agora-terracotta-hover animate-in fade-in slide-in-from-bottom-2 duration-200"
+        >
+          <div className="flex items-center gap-3">
+            <div className="bg-agora-card/20 p-2 rounded-xl text-agora-card">
+              <ShoppingBag className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="font-serif font-bold text-sm leading-tight flex items-center gap-2">
+                <span>{totalCartItems} item{totalCartItems > 1 ? 's' : ''}</span>
+                <span>•</span>
+                <span className="text-base">{formatCurrency(totalCartAmountInCents, settings.currency_symbol)}</span>
+              </div>
+              <span className="text-[11px] opacity-90 block">Tap to view cart & checkout</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1 bg-agora-card/20 px-3 py-1.5 rounded-xl font-bold text-xs">
+            <span>View</span>
+            <ChevronUp className="w-4 h-4" />
+          </div>
+        </div>
+      )}
+
+      {/* Mobile/Tablet Collapsible Cart Bottom Sheet Overlay (< lg) */}
+      {isCartSheetOpen && (
+        <div
+          className="lg:hidden fixed inset-0 z-50 bg-agora-ink/60 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200"
+          onClick={() => setIsCartSheetOpen(false)}
+        >
+          <div
+            className="bg-agora-card border-t border-agora-border rounded-t-3xl shadow-2xl max-h-[85vh] flex flex-col w-full animate-in slide-in-from-bottom duration-300 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Sheet Handle */}
+            <div className="pt-3 pb-1 flex flex-col items-center shrink-0 border-b border-agora-border/60">
+              <div className="w-12 h-1.5 bg-agora-border rounded-full mb-2" />
+              <div className="w-full px-4 flex items-center justify-between">
+                <span className="text-xs font-bold text-agora-ink-muted uppercase tracking-wider">Cart Register</span>
+                <button
+                  onClick={() => setIsCartSheetOpen(false)}
+                  className="p-1 rounded-lg text-agora-ink-muted hover:text-agora-ink"
+                >
+                  <ChevronDown className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Cart Drawer Content */}
+            <div className="flex-1 min-h-0 overflow-y-auto p-3">
+              <CartDrawer
+                cart={cart}
+                currencySymbol={settings.currency_symbol}
+                onUpdateQuantity={handleUpdateQuantity}
+                onRemoveItem={handleRemoveItem}
+                onClearCart={handleClearCart}
+                onProceedToCheckout={() => {
+                  setIsCartSheetOpen(false);
+                  setIsCheckoutOpen(true);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       <CheckoutModal
         isOpen={isCheckoutOpen}
@@ -279,3 +426,4 @@ export default function SellView() {
     </div>
   );
 }
+

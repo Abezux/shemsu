@@ -70,8 +70,8 @@ export default function CheckoutModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-agora-ink/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-agora-card border border-agora-border rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 text-agora-ink">
+    <div className="fixed inset-0 z-50 bg-agora-ink/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="bg-agora-card border border-agora-border rounded-t-3xl sm:rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[92vh] flex flex-col animate-in fade-in slide-in-from-bottom sm:zoom-in-95 duration-200 text-agora-ink">
         {completedSale ? (
           /* Sale Success View */
           <div className="p-6 text-center space-y-5">

@@ -1,0 +1,22 @@
+{
+  "short_name": "Agora",
+  "name": "Agora POS — Digital Ledger",
+  "description": "Digital ledger and point-of-sale for modern merchants",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#FAF6EE",
+  "theme_color": "#FAF6EE",
+  "display": "standalone",
+  "orientation": "any"
+}

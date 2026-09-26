@@ -14,7 +14,9 @@ import {
   ShoppingBag,
   Pill,
   UtensilsCrossed,
-  Scissors
+  Scissors,
+  MoreVertical,
+  X
 } from 'lucide-react';
 import { api } from '@/services/api';
 import { StoreSettings } from '@/types';
@@ -45,7 +47,7 @@ export const navLinks = [
 
 export function Sidebar({ activeTab, onNavigate }: NavbarProps) {
   return (
-    <aside className="hidden md:flex flex-col w-56 shrink-0 bg-agora-card border-r border-agora-border p-3 justify-between h-[calc(100vh-65px)] sticky top-[65px]">
+    <aside className="hidden lg:flex flex-col w-56 shrink-0 bg-agora-card border-r border-agora-border p-3 justify-between h-[calc(100vh-65px)] sticky top-[65px]">
       <div className="space-y-1">
         <span className="text-[10px] font-bold uppercase tracking-wider text-agora-ink-muted px-3 block mb-2">
           Navigation
@@ -92,6 +94,7 @@ export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
   });
   const [isSeeding, setIsSeeding] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
 
   const loadSettings = () => {
     api.getSettings().then(setSettings).catch(() => {});
@@ -140,21 +143,23 @@ export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
   return (
     <>
       {/* Top Header Bar */}
-      <header className="sticky top-0 z-30 bg-agora-card border-b border-agora-border text-agora-ink shadow-sm h-[65px] flex items-center">
-        <div className="w-full mx-auto px-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+      <header className="sticky top-0 z-30 bg-agora-card border-b border-agora-border text-agora-ink shadow-sm min-h-[56px] sm:min-h-[65px] flex items-center py-2">
+        <div className="w-full mx-auto px-3 sm:px-4 flex items-center justify-between">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
             <AgoraLogo size="md" />
             
-            <div className="hidden sm:block h-7 w-[1px] bg-agora-border mx-1" />
+            <div className="hidden sm:block h-7 w-[1px] bg-agora-border mx-0.5" />
 
-            <div>
-              <h1 className="font-serif font-bold text-base tracking-tight leading-tight flex items-center gap-2 text-agora-ink">
-                <span className="truncate max-w-[140px] sm:max-w-none">{settings.store_name}</span>
-                <span className="text-xs font-sans font-semibold px-2 py-0.5 rounded-full bg-agora-brass/10 text-agora-brass border border-agora-brass/30 flex items-center gap-1 shrink-0">
-                  <BadgeIcon className="w-3 h-3 text-agora-brass" /> {badge.label}
+            <div className="min-w-0">
+              <h1 className="font-serif font-bold text-sm sm:text-base tracking-tight leading-tight flex items-center gap-1.5 text-agora-ink">
+                <span className="truncate max-w-[130px] sm:max-w-[200px] lg:max-w-none">{settings.store_name}</span>
+                <span className="text-[11px] sm:text-xs font-sans font-semibold px-2 py-0.5 rounded-full bg-agora-brass/10 text-agora-brass border border-agora-brass/30 flex items-center gap-1 shrink-0">
+                  <BadgeIcon className="w-3 h-3 text-agora-brass" /> <span className="hidden sm:inline">{badge.label}</span>
                 </span>
               </h1>
-              <div className="flex items-center gap-2 text-xs text-agora-ink-muted mt-0.5">
+
+              {/* Desktop Status Sub-bar (hidden on mobile/tablet < lg) */}
+              <div className="hidden lg:flex items-center gap-2 text-xs text-agora-ink-muted mt-0.5">
                 <span className="flex items-center gap-1 text-agora-sage font-medium">
                   <Wifi className="w-3 h-3 text-agora-sage" />
                   <span>Cloud Active</span>
@@ -162,7 +167,7 @@ export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
                 {user?.email && (
                   <>
                     <span>•</span>
-                    <span className="hidden sm:flex items-center gap-1 text-agora-ink-muted">
+                    <span className="flex items-center gap-1 text-agora-ink-muted">
                       <User className="w-3 h-3 text-agora-brass" />
                       <span className="truncate max-w-[160px]">{user.email}</span>
                     </span>
@@ -174,7 +179,8 @@ export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Desktop Action Buttons (lg: and up) */}
+          <div className="hidden lg:flex items-center gap-2 shrink-0">
             <button
               onClick={handleSeed}
               disabled={isSeeding}
@@ -182,8 +188,7 @@ export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
               title="Load sample products"
             >
               <Sparkles className="w-3.5 h-3.5 text-agora-terracotta" />
-              <span className="hidden sm:inline">{isSeeding ? 'Seeding...' : 'Load Samples'}</span>
-              <span className="sm:hidden">Samples</span>
+              <span>{isSeeding ? 'Seeding...' : 'Load Samples'}</span>
             </button>
 
             <button
@@ -202,11 +207,72 @@ export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
               <LogOut className="w-4 h-4 text-agora-brick" />
             </button>
           </div>
+
+          {/* Mobile/Tablet Kebab Action Menu Toggle (< lg) */}
+          <div className="flex lg:hidden items-center gap-2 relative shrink-0">
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="p-2 rounded-xl bg-agora-bg border border-agora-border text-agora-ink hover:bg-agora-border transition-all active:scale-95"
+              aria-label="Toggle menu"
+            >
+              {isMobileMenuOpen ? <X className="w-5 h-5 text-agora-terracotta" /> : <MoreVertical className="w-5 h-5 text-agora-ink" />}
+            </button>
+
+            {/* Mobile Dropdown Card */}
+            {isMobileMenuOpen && (
+              <div 
+                className="absolute right-0 top-12 w-64 bg-agora-card border border-agora-border rounded-2xl shadow-xl p-3 z-50 animate-in fade-in zoom-in-95 space-y-2 text-xs"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <div className="bg-agora-bg p-2.5 rounded-xl border border-agora-border space-y-1">
+                  <div className="flex items-center justify-between text-agora-sage font-semibold">
+                    <span className="flex items-center gap-1">
+                      <Wifi className="w-3 h-3 text-agora-sage" /> Cloud Active
+                    </span>
+                    <span className="font-serif font-bold text-agora-ink">{settings.currency_symbol} ({settings.currency_code})</span>
+                  </div>
+                  {user?.email && (
+                    <div className="text-[11px] text-agora-ink-muted truncate flex items-center gap-1">
+                      <User className="w-3 h-3 text-agora-brass shrink-0" />
+                      <span className="truncate">{user.email}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-1 pt-1">
+                  <button
+                    onClick={handleSeed}
+                    disabled={isSeeding}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl bg-agora-terracotta/10 text-agora-terracotta font-bold hover:bg-agora-terracotta/20 transition-all text-left"
+                  >
+                    <Sparkles className="w-4 h-4 text-agora-terracotta" />
+                    <span>{isSeeding ? 'Seeding...' : 'Load Sample Products'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => setIsSettingsOpen(true)}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl bg-agora-brass/10 text-agora-brass font-bold hover:bg-agora-brass/20 transition-all text-left"
+                  >
+                    <Settings className="w-4 h-4 text-agora-brass" />
+                    <span>Store Settings</span>
+                  </button>
+
+                  <button
+                    onClick={() => signOut()}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl bg-agora-brick/10 text-agora-brick font-bold hover:bg-agora-brick/20 transition-all text-left"
+                  >
+                    <LogOut className="w-4 h-4 text-agora-brick" />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
-      {/* Mobile Bottom Navigation Bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-agora-card/95 backdrop-blur-md border-t border-agora-border text-agora-ink shadow-lg">
+      {/* Mobile Bottom Navigation Bar (< lg) */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-agora-card/95 backdrop-blur-md border-t border-agora-border text-agora-ink shadow-lg">
         <div className="grid grid-cols-5 gap-1 p-1">
           {navLinks.map((link) => {
             const Icon = link.icon;
@@ -239,3 +305,4 @@ export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
     </>
   );
 }
+

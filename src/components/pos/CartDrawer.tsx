@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { CartItem } from '@/types';
 import { formatCurrency } from '@/utils/currency';
 import { ShoppingBag, Trash2, Plus, Minus, ArrowRight, ShoppingCart } from 'lucide-react';
@@ -11,6 +11,109 @@ interface CartDrawerProps {
   onRemoveItem: (productId: string) => void;
   onClearCart: () => void;
   onProceedToCheckout: () => void;
+}
+
+interface CartItemRowProps {
+  item: CartItem;
+  currencySymbol: string;
+  onUpdateQuantity: (productId: string, delta: number) => void;
+  onRemoveItem: (productId: string) => void;
+}
+
+function CartItemRow({ item, currencySymbol, onUpdateQuantity, onRemoveItem }: CartItemRowProps) {
+  const [swipeOffset, setSwipeOffset] = useState<number>(0);
+  const touchStartX = useRef<number>(0);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchStartX.current) return;
+    const diffX = e.touches[0].clientX - touchStartX.current;
+    if (diffX < 0) {
+      setSwipeOffset(Math.max(diffX, -100));
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (swipeOffset < -60) {
+      onRemoveItem(item.product.id);
+    }
+    setSwipeOffset(0);
+    touchStartX.current = 0;
+  };
+
+  const lineTotal = item.product.price * item.quantity;
+
+  return (
+    <div className="relative overflow-hidden py-1">
+      {/* Background Delete Trigger reveal */}
+      <div 
+        onClick={() => onRemoveItem(item.product.id)}
+        className="absolute inset-y-0 right-0 w-20 bg-agora-brick flex items-center justify-center text-agora-card font-bold rounded-lg cursor-pointer"
+      >
+        <Trash2 className="w-5 h-5 text-agora-card animate-pulse" />
+      </div>
+
+      {/* Swipeable Item Container */}
+      <div
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        style={{ transform: `translateX(${swipeOffset}px)` }}
+        className="relative bg-agora-card py-2 flex items-center justify-between gap-2.5 group hover:bg-agora-bg/50 px-1 rounded-lg transition-transform duration-75"
+      >
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <ProductAvatar name={item.product.name} imageUrl={item.product.image_url} size="sm" />
+            <h4 className="font-bold text-agora-ink text-xs truncate">
+              {item.product.name}
+            </h4>
+          </div>
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className="text-[11px] text-agora-ink-muted">
+              {formatCurrency(item.product.price, currencySymbol)} ea
+            </span>
+            <span className="text-xs font-serif font-bold text-agora-terracotta">
+              = {formatCurrency(lineTotal, currencySymbol)}
+            </span>
+          </div>
+        </div>
+
+        {/* Action Controls */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            onClick={() => onRemoveItem(item.product.id)}
+            className="p-1 text-agora-brick/60 hover:text-agora-brick hover:bg-agora-brick-light rounded-md transition-all hidden sm:block opacity-0 group-hover:opacity-100"
+            title="Remove item"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+
+          {/* Quantity Controls */}
+          <div className="flex items-center gap-1 bg-agora-card border border-agora-border p-0.5 sm:p-1 rounded-xl shadow-inner shrink-0">
+            <button
+              onClick={() => onUpdateQuantity(item.product.id, -1)}
+              className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-agora-bg hover:bg-agora-border active:scale-95 flex items-center justify-center text-agora-ink font-bold transition-all text-xs"
+            >
+              <Minus className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+            </button>
+            <span className="w-5 sm:w-6 text-center font-bold text-xs text-agora-ink">
+              {item.quantity}
+            </span>
+            <button
+              onClick={() => onUpdateQuantity(item.product.id, 1)}
+              disabled={item.quantity >= item.product.stock_quantity}
+              className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-agora-terracotta hover:bg-agora-terracotta-hover active:scale-95 disabled:opacity-40 flex items-center justify-center text-agora-card font-bold transition-all text-xs"
+            >
+              <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function CartDrawer({
@@ -64,52 +167,15 @@ export default function CartDrawer({
             </p>
           </div>
         ) : (
-          cart.map((item) => {
-            const lineTotal = item.product.price * item.quantity;
-            return (
-              <div
-                key={item.product.id}
-                className="py-2 flex items-center justify-between gap-2.5 group hover:bg-agora-bg/50 px-1 rounded-lg transition-all"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <ProductAvatar name={item.product.name} imageUrl={item.product.image_url} size="sm" />
-                    <h4 className="font-bold text-agora-ink text-xs truncate">
-                      {item.product.name}
-                    </h4>
-                  </div>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[11px] text-agora-ink-muted">
-                      {formatCurrency(item.product.price, currencySymbol)} ea
-                    </span>
-                    <span className="text-xs font-serif font-bold text-agora-terracotta">
-                      = {formatCurrency(lineTotal, currencySymbol)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Quantity Controls */}
-                <div className="flex items-center gap-1 bg-agora-card border border-agora-border p-0.5 sm:p-1 rounded-xl shadow-inner shrink-0">
-                  <button
-                    onClick={() => onUpdateQuantity(item.product.id, -1)}
-                    className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-agora-bg hover:bg-agora-border active:scale-95 flex items-center justify-center text-agora-ink font-bold transition-all text-xs"
-                  >
-                    <Minus className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  </button>
-                  <span className="w-5 sm:w-6 text-center font-bold text-xs text-agora-ink">
-                    {item.quantity}
-                  </span>
-                  <button
-                    onClick={() => onUpdateQuantity(item.product.id, 1)}
-                    disabled={item.quantity >= item.product.stock_quantity}
-                    className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-agora-terracotta hover:bg-agora-terracotta-hover active:scale-95 disabled:opacity-40 flex items-center justify-center text-agora-card font-bold transition-all text-xs"
-                  >
-                    <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  </button>
-                </div>
-              </div>
-            );
-          })
+          cart.map((item) => (
+            <CartItemRow
+              key={item.product.id}
+              item={item}
+              currencySymbol={currencySymbol}
+              onUpdateQuantity={onUpdateQuantity}
+              onRemoveItem={onRemoveItem}
+            />
+          ))
         )}
       </div>
 
@@ -140,3 +206,4 @@ export default function CartDrawer({
     </div>
   );
 }
+
