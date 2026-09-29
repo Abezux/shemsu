@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { CartItem, Sale } from '@/types';
 import { formatCurrency, parseInputToCents } from '@/utils/currency';
+import BottomSheet from '@/components/common/BottomSheet';
 import { 
   X, 
   DollarSign, 
@@ -167,9 +168,8 @@ export default function CheckoutModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-agora-ink/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="bg-agora-card border border-agora-border rounded-t-3xl sm:rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[92vh] flex flex-col animate-in fade-in slide-in-from-bottom sm:zoom-in-95 duration-200 text-agora-ink">
-        {completedSale ? (
+    <BottomSheet isOpen={isOpen} onClose={onClose}>
+      {completedSale ? (
           /* Sale Success View */
           <div className="p-6 text-center space-y-5 overflow-y-auto">
             <div className="relative mx-auto w-24 h-24 flex items-center justify-center my-2">
@@ -525,8 +525,7 @@ export default function CheckoutModal({
             </form>
           </div>
         )}
-      </div>
-    </div>
+    </BottomSheet>
   );
 }
 
