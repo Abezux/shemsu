@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS products (
   attributes JSONB DEFAULT '{}'::jsonb,
   barcode TEXT,
   image_url TEXT,
+  is_favorite BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

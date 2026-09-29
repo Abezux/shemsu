@@ -61,7 +61,7 @@ export default function RestockModal({
       onClose={onClose}
       title={
         <div className="flex items-center gap-2">
-          <PlusCircle className="w-5 h-5 text-agora-terracotta shrink-0" />
+          <PlusCircle className="w-5 h-5 text-agora-ink-muted shrink-0" />
           <span className="font-serif font-bold text-agora-ink text-lg">Restock Inventory</span>
         </div>
       }
@@ -91,7 +91,7 @@ export default function RestockModal({
                 <button
                   type="button"
                   onClick={() => setAddQuantity(suggestedQuantity)}
-                  className="text-[11px] font-bold text-agora-terracotta bg-agora-terracotta-light px-2 py-0.5 rounded-full border border-agora-terracotta-border hover:underline"
+                  className="text-[11px] font-bold text-agora-gold bg-agora-gold-light px-2 py-0.5 rounded-full border border-agora-gold-border hover:underline"
                 >
                   Suggested: +{suggestedQuantity}
                 </button>
@@ -105,7 +105,7 @@ export default function RestockModal({
                   onClick={() => setAddQuantity(qty)}
                   className={`py-2 px-3 rounded-xl border text-xs font-serif font-bold transition-all ${
                     addQuantity === qty
-                      ? 'bg-agora-terracotta/15 border-agora-terracotta text-agora-terracotta shadow-sm'
+                      ? 'bg-agora-brass/15 border-agora-brass text-agora-brass shadow-sm'
                       : 'bg-agora-card border-agora-border text-agora-ink-muted hover:text-agora-ink'
                   }`}
                 >

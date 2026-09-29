@@ -3,7 +3,7 @@ import { Product, ProductCategory, UnitType, StoreSettings } from '@/types';
 import { parseInputToCents, centsToDecimalString } from '@/utils/currency';
 import { api } from '@/services/api';
 import BottomSheet from '@/components/common/BottomSheet';
-import { X, Package, AlertCircle } from 'lucide-react';
+import { X, Package, AlertCircle, Star } from 'lucide-react';
 import ProductAvatar from '@/components/common/ProductAvatar';
 
 interface AddEditProductModalProps {
@@ -47,6 +47,7 @@ export default function AddEditProductModal({
   const [lowStockThreshold, setLowStockThreshold] = useState<number>(5);
   const [unitType, setUnitType] = useState<UnitType>('piece');
   const [imageUrl, setImageUrl] = useState<string>('');
+  const [isFavorite, setIsFavorite] = useState<boolean>(false);
   const [attributes, setAttributes] = useState<Record<string, any>>({});
   const [settings, setSettings] = useState<StoreSettings | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -64,6 +65,7 @@ export default function AddEditProductModal({
         setLowStockThreshold(productToEdit.low_stock_threshold);
         setUnitType(productToEdit.unit_type || 'piece');
         setImageUrl(productToEdit.image_url || '');
+        setIsFavorite(!!productToEdit.is_favorite);
         setAttributes(productToEdit.attributes || {});
       } else {
         setName('');
@@ -74,6 +76,7 @@ export default function AddEditProductModal({
         setLowStockThreshold(5);
         setUnitType('piece');
         setImageUrl('');
+        setIsFavorite(false);
         setAttributes({});
       }
       setIsSubmitting(false);
@@ -111,6 +114,7 @@ export default function AddEditProductModal({
         unit_type: unitType,
         attributes,
         image_url: imageUrl.trim(),
+        is_favorite: isFavorite,
       });
       onClose();
     } catch (err: any) {
@@ -128,7 +132,7 @@ export default function AddEditProductModal({
       onClose={onClose}
       title={
         <div className="flex items-center gap-2">
-          <Package className="w-5 h-5 text-agora-terracotta shrink-0" />
+          <Package className="w-5 h-5 text-agora-ink-muted shrink-0" />
           <span className="font-serif font-bold text-agora-ink text-lg">
             {productToEdit ? 'Edit Product' : 'Add Product'}
           </span>
@@ -138,7 +142,21 @@ export default function AddEditProductModal({
       <form onSubmit={handleSubmit} className="space-y-4">
           {/* Name & Avatar Preview */}
           <div className="space-y-1">
-            <label className="text-xs font-bold text-agora-ink">Product Name</label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-agora-ink">Product Name</label>
+              <button
+                type="button"
+                onClick={() => setIsFavorite(!isFavorite)}
+                className={`flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-lg border transition-all ${
+                  isFavorite
+                    ? 'bg-agora-brass/15 border-agora-brass text-agora-brass'
+                    : 'bg-agora-bg border-agora-border text-agora-ink-muted hover:text-agora-brass'
+                }`}
+              >
+                <Star className={`w-3.5 h-3.5 ${isFavorite ? 'fill-agora-brass text-agora-brass' : ''}`} />
+                <span>{isFavorite ? 'Pinned to Favorites' : 'Pin to Favorites'}</span>
+              </button>
+            </div>
             <div className="flex items-center gap-2.5">
               <ProductAvatar name={name || 'P'} imageUrl={imageUrl} size="md" />
               <input
@@ -235,8 +253,8 @@ export default function AddEditProductModal({
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-bold text-agora-terracotta flex items-center gap-1">
-                <AlertCircle className="w-3.5 h-3.5" /> Alert Level
+              <label className="text-xs font-bold text-agora-gold flex items-center gap-1">
+                <AlertCircle className="w-3.5 h-3.5 text-agora-gold" /> Alert Level
               </label>
               <input
                 type="number"
@@ -244,14 +262,14 @@ export default function AddEditProductModal({
                 required
                 value={lowStockThreshold}
                 onChange={(e) => setLowStockThreshold(parseInt(e.target.value) || 1)}
-                className="w-full bg-agora-card border border-agora-terracotta-border rounded-xl px-3 py-2 text-sm text-agora-terracotta font-serif font-bold focus:outline-none focus:border-agora-terracotta"
+                className="w-full bg-agora-card border border-agora-gold-border rounded-xl px-3 py-2 text-sm text-agora-gold font-serif font-bold focus:outline-none focus:border-agora-gold"
               />
             </div>
           </div>
 
           {/* Business Vertical Specific Dynamic Attributes */}
           <div className="bg-agora-bg/40 p-4 rounded-2xl border border-agora-border space-y-3">
-            <span className="text-xs font-bold text-agora-terracotta uppercase tracking-wider block">
+            <span className="text-xs font-bold text-agora-brass uppercase tracking-wider block">
               Vertical Attributes ({businessType.replace('_', ' ')})
             </span>
 

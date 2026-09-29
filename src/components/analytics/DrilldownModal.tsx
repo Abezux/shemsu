@@ -48,7 +48,7 @@ export default function DrilldownModal({
         {/* Header */}
         <div className="px-6 py-4 border-b border-agora-border flex items-center justify-between bg-agora-bg/60">
           <div className="flex items-center gap-2">
-            <Maximize2 className="w-5 h-5 text-agora-terracotta" />
+            <Maximize2 className="w-5 h-5 text-agora-ink-muted" />
             <div>
               <h3 className="font-serif font-bold text-agora-ink text-lg leading-tight">{title}</h3>
               <span className="text-xs text-agora-ink/60">Detailed metric drill-down inspection</span>
@@ -93,7 +93,7 @@ export default function DrilldownModal({
           <div className="grid grid-cols-3 gap-3">
             <div className="bg-agora-bg p-3.5 rounded-2xl border border-agora-border">
               <span className="text-[10px] text-agora-ink/60 uppercase font-semibold">Period Revenue</span>
-              <div className="text-xl font-serif font-bold text-agora-terracotta mt-1">
+              <div className="text-xl font-serif font-bold text-agora-ink mt-1">
                 {formatCurrency(totalRevenue, currencySymbol)}
               </div>
             </div>
@@ -125,7 +125,7 @@ export default function DrilldownModal({
                   <div key={s.id} className="p-4 flex justify-between items-center text-xs hover:bg-agora-card/60 transition-colors">
                     <div>
                       <span className="font-bold text-agora-ink block text-sm flex items-center gap-1.5">
-                        <Receipt className="w-3.5 h-3.5 text-agora-terracotta" /> {s.sale_number}
+                        <Receipt className="w-3.5 h-3.5 text-agora-ink-muted" /> {s.sale_number}
                       </span>
                       <span className="text-agora-ink/60">{formatDate(s.timestamp)}</span>
                     </div>
@@ -138,7 +138,7 @@ export default function DrilldownModal({
                     </div>
 
                     <div className="text-right">
-                      <span className="font-serif font-bold text-agora-terracotta text-sm block">
+                      <span className="font-serif font-bold text-agora-ink text-sm block">
                         {formatCurrency(s.total_amount, currencySymbol)}
                       </span>
                       <span className="text-[10px] text-agora-ink/70 uppercase font-semibold bg-agora-card px-2 py-0.5 rounded border border-agora-border">

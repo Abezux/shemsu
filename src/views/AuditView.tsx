@@ -151,11 +151,8 @@ export default function AuditView() {
       <div>
         <h1 className="text-xl sm:text-2xl font-serif font-black text-agora-ink tracking-tight flex items-center gap-2">
           <FileText className="w-6 h-6 sm:w-7 sm:h-7 text-agora-terracotta" />
-          Activity & Audit Trail
+          Activity
         </h1>
-        <p className="text-xs text-agora-ink-muted mt-0.5 font-medium">
-          Detailed history of sales stock deductions, inventory restocks, and catalog edits
-        </p>
       </div>
 
       {/* Toolbar: Search + FilterSheet */}

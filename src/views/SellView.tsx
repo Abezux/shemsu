@@ -78,13 +78,17 @@ export default function SellView() {
     products.forEach((p) => {
       if (p.category) set.add(p.category);
     });
-    return ['ALL', ...Array.from(set)];
+    return ['ALL', 'FAVORITES', ...Array.from(set)];
   }, [products]);
 
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
       const matchesCategory =
-        selectedCategory === 'ALL' || product.category === selectedCategory;
+        selectedCategory === 'ALL'
+          ? true
+          : selectedCategory === 'FAVORITES'
+          ? product.is_favorite === true
+          : product.category === selectedCategory;
       const matchesSearch =
         product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         product.category.toLowerCase().includes(searchQuery.toLowerCase());
@@ -174,6 +178,14 @@ export default function SellView() {
     return sale;
   };
 
+  const handleToggleFavorite = async (product: Product) => {
+    const newFav = !product.is_favorite;
+    setProducts((prev) =>
+      prev.map((p) => (p.id === product.id ? { ...p, is_favorite: newFav } : p))
+    );
+    await api.toggleFavoriteProduct(product.id, newFav);
+  };
+
   const lowStockCount = useMemo(
     () => products.filter((p) => p.stock_quantity <= p.low_stock_threshold).length,
     [products]
@@ -243,11 +255,11 @@ export default function SellView() {
                 onClick={() => setShowLowStockOnly(!showLowStockOnly)}
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-all ${
                   showLowStockOnly
-                    ? 'bg-agora-terracotta/15 border-agora-terracotta text-agora-terracotta'
+                    ? 'bg-agora-gold-light border-agora-gold-border text-agora-gold'
                     : 'bg-agora-card border-agora-border text-agora-ink-muted hover:text-agora-ink'
                 }`}
               >
-                <AlertTriangle className="w-3.5 h-3.5" />
+                <AlertTriangle className="w-3.5 h-3.5 text-agora-gold" />
                 <span>Low Stock ({lowStockCount})</span>
               </button>
 
@@ -274,7 +286,7 @@ export default function SellView() {
                       : 'bg-agora-card border border-agora-border text-agora-ink-muted hover:text-agora-ink hover:bg-agora-bg'
                   }`}
                 >
-                  {cat}
+                  {cat === 'FAVORITES' ? '★ Favorites' : cat}
                 </button>
               ))}
             </div>
@@ -345,6 +357,7 @@ export default function SellView() {
                     currencySymbol={settings.currency_symbol}
                     cartQuantity={cartItem?.quantity || 0}
                     onAddToCart={handleAddToCart}
+                    onToggleFavorite={handleToggleFavorite}
                   />
                 );
               })}

@@ -34,7 +34,7 @@ export default function ProductAvatar({
 
   return (
     <div
-      className={`${sizeClasses[size]} bg-agora-bg border border-agora-border flex items-center justify-center font-serif font-black text-agora-terracotta shrink-0 shadow-inner select-none ${className}`}
+      className={`${sizeClasses[size]} bg-agora-bg border border-agora-border flex items-center justify-center font-serif font-black text-agora-brass shrink-0 shadow-inner select-none ${className}`}
     >
       {firstLetter}
     </div>

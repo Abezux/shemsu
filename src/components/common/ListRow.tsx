@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { LucideIcon } from 'lucide-react';
 
 export interface SwipeAction {
@@ -25,6 +25,8 @@ interface ListRowProps {
   pressFeedback?: boolean;
 }
 
+let hasNudgedSession = false;
+
 export default function ListRow({
   icon,
   title,
@@ -38,9 +40,25 @@ export default function ListRow({
   pressFeedback = true,
 }: ListRowProps) {
   const [swipeOffset, setSwipeOffset] = useState<number>(0);
+  const [isNudging, setIsNudging] = useState<boolean>(false);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
   const maxSwipeOffset = swipeActions.length * 70; // 70px per action button
+
+  useEffect(() => {
+    if (swipeActions.length > 0 && !hasNudgedSession) {
+      if (typeof window !== 'undefined' && !sessionStorage.getItem('agora_swipe_nudged')) {
+        hasNudgedSession = true;
+        sessionStorage.setItem('agora_swipe_nudged', 'true');
+        const timer1 = setTimeout(() => setIsNudging(true), 400);
+        const timer2 = setTimeout(() => setIsNudging(false), 1200);
+        return () => {
+          clearTimeout(timer1);
+          clearTimeout(timer2);
+        };
+      }
+    }
+  }, [swipeActions]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (swipeActions.length === 0) return;
@@ -84,9 +102,11 @@ export default function ListRow({
     setSwipeOffset(0);
   };
 
+  const effectiveOffset = isNudging ? 15 : swipeOffset;
+
   return (
-    <div className="relative overflow-hidden rounded-2xl mb-1.5 transition-all">
-      {/* Swipe Actions Background Layer */}
+    <div className="relative group overflow-hidden rounded-2xl mb-1.5 transition-all select-none">
+      {/* Swipe Actions Background Layer (Mobile / Touch) */}
       {swipeActions.length > 0 && (
         <div className="absolute inset-y-0 right-0 flex items-center justify-end z-0 pr-1">
           {swipeActions.map((act) => {
@@ -94,6 +114,7 @@ export default function ListRow({
             return (
               <button
                 key={act.id}
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   resetSwipe();
@@ -104,6 +125,33 @@ export default function ListRow({
                 }`}
               >
                 {Icon && <Icon className="w-4 h-4 mb-0.5" />}
+                <span>{act.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Desktop Hover Action Shortcuts (Non-Touch / Mouse users) */}
+      {swipeActions.length > 0 && (
+        <div className="hidden sm:flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 absolute right-3 top-1/2 -translate-y-1/2 z-20 bg-agora-card/95 backdrop-blur-sm p-1 rounded-xl shadow-md border border-agora-border">
+          {swipeActions.map((act) => {
+            const Icon = act.icon;
+            return (
+              <button
+                key={act.id}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  resetSwipe();
+                  act.onClick(e);
+                }}
+                className={`px-2.5 py-1 flex items-center gap-1 font-bold text-xs rounded-lg transition-transform active:scale-95 shadow-sm ${
+                  act.bgColorClass || 'bg-agora-terracotta text-agora-card'
+                }`}
+                title={act.label}
+              >
+                {Icon && <Icon className="w-3.5 h-3.5" />}
                 <span>{act.label}</span>
               </button>
             );
@@ -123,12 +171,12 @@ export default function ListRow({
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        style={{ transform: `translateX(-${swipeOffset}px)` }}
-        className={`relative z-10 bg-agora-card border border-agora-border/80 p-3.5 sm:p-4 rounded-2xl flex items-center justify-between gap-3 transition-transform duration-150 ease-out select-none ${
+        style={{ transform: `translateX(-${effectiveOffset}px)` }}
+        className={`relative z-10 bg-agora-card border border-agora-border/80 p-3.5 sm:p-4 rounded-2xl flex items-center justify-between gap-3 transition-transform duration-200 ease-out select-none ${
           onClick ? 'cursor-pointer' : ''
         } ${
           pressFeedback && onClick
-            ? 'active:scale-[0.99] active:bg-agora-bg hover:border-agora-terracotta/40'
+            ? 'active:scale-[0.99] active:bg-agora-bg hover:border-agora-brass/50'
             : ''
         } ${className}`}
       >
@@ -148,7 +196,7 @@ export default function ListRow({
         </div>
 
         {/* Right-Aligned Value & Badges Block */}
-        <div className="text-right shrink-0 flex flex-col items-end space-y-1">
+        <div className="text-right shrink-0 flex flex-col items-end space-y-1 sm:group-hover:opacity-20 transition-opacity">
           {value && (
             <div className="font-serif font-bold text-agora-ink text-sm sm:text-base leading-none">
               {value}

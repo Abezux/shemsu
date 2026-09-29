@@ -102,6 +102,9 @@ export default function AnalyticsView() {
     return api.getMetricTrends(sales, trendDays);
   }, [sales, trendDays]);
 
+  const isRevenueIncrease = metricTrends.revenueTrend.isIncrease;
+  const trendColorHex = isRevenueIncrease ? '#5C7A52' : '#9B4038';
+
   const revenueTrendData = useMemo(() => {
     return api.getRevenueTrendData(sales, trendDays);
   }, [sales, trendDays]);
@@ -146,12 +149,9 @@ export default function AnalyticsView() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-serif font-black text-agora-ink tracking-tight flex items-center gap-2">
-            <BarChart3 className="w-6 h-6 sm:w-7 sm:h-7 text-agora-terracotta" />
-            Financial Ledger & Insights
+            <BarChart3 className="w-6 h-6 sm:w-7 sm:h-7 text-agora-ink-muted" />
+            Reports
           </h1>
-          <p className="text-xs text-agora-ink-muted mt-0.5 font-medium">
-            Revenue trajectory, category performance, peak hours, and cash closures
-          </p>
         </div>
 
         <button
@@ -167,7 +167,7 @@ export default function AnalyticsView() {
         <span className="text-xs font-serif font-bold uppercase tracking-wider text-agora-brass">
           Net Revenue ({trendDays === 1 ? 'Today' : `${trendDays} Days`})
         </span>
-        <h2 className="text-4xl sm:text-5xl font-serif font-black text-agora-terracotta tracking-tight">
+        <h2 className="text-4xl sm:text-5xl font-serif font-black text-agora-ink tracking-tight">
           {formatCurrency(metricTrends.revenueTrend.currentValue, settings.currency_symbol)}
         </h2>
 
@@ -194,99 +194,71 @@ export default function AnalyticsView() {
         </div>
       </div>
 
-      {/* KPI Overview Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
-        {/* Sales Count KPI */}
-        <div
-          onClick={() => handleOpenDrilldown('Transactions', 'SALES')}
-          className="ledger-card p-3.5 sm:p-4 cursor-pointer hover:border-agora-terracotta transition-all group shadow-sm"
-        >
-          <div className="flex items-center justify-between text-agora-ink-muted text-xs font-bold">
-            <span>Sales Count</span>
-            <ShoppingBag className="w-4 h-4 text-agora-terracotta group-hover:scale-110 transition-transform" />
+      {/* Compact KPI Overview Strip */}
+      <div className="space-y-2.5">
+        <div className="ledger-card p-3 flex items-center justify-between border border-agora-border shadow-sm">
+          {/* Sales Count Column */}
+          <div
+            onClick={() => handleOpenDrilldown('Transactions', 'SALES')}
+            className="flex-1 flex flex-col items-center justify-center cursor-pointer hover:opacity-80 transition-opacity py-0.5"
+          >
+            <div className="flex items-center gap-1.5">
+              <ShoppingBag className="w-4 h-4 text-agora-ink-muted" />
+              <span className="text-lg sm:text-xl font-serif font-black text-agora-ink">
+                {metricTrends.salesCountTrend.currentValue}
+              </span>
+            </div>
+            <span className="text-[11px] font-bold text-agora-ink-muted mt-0.5">Sales Count</span>
           </div>
-          <div className="text-xl sm:text-2xl font-serif font-black text-agora-ink mt-1.5">
-            {metricTrends.salesCountTrend.currentValue} sales
-          </div>
-          <div className="flex items-center gap-1.5 mt-1.5">
-            <span
-              className={`text-xs font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-0.5 ${
-                metricTrends.salesCountTrend.isIncrease
-                  ? 'bg-agora-sage-light text-agora-sage border border-agora-sage-border'
-                  : 'bg-agora-brick-light text-agora-brick border border-agora-brick-border'
-              }`}
-            >
-              {metricTrends.salesCountTrend.isIncrease ? (
-                <ArrowUpRight className="w-3 h-3" />
-              ) : (
-                <ArrowDownRight className="w-3 h-3" />
-              )}
-              {metricTrends.salesCountTrend.percentageChange}%
-            </span>
-            <span className="text-[10px] text-agora-ink-muted font-medium">vs prev period</span>
+
+          <div className="w-px h-8 bg-agora-border/80 shrink-0" />
+
+          {/* Units Sold Column */}
+          <div
+            onClick={() => handleOpenDrilldown('Units Sold', 'UNITS')}
+            className="flex-1 flex flex-col items-center justify-center cursor-pointer hover:opacity-80 transition-opacity py-0.5"
+          >
+            <div className="flex items-center gap-1.5">
+              <Package className="w-4 h-4 text-agora-ink-muted" />
+              <span className="text-lg sm:text-xl font-serif font-black text-agora-ink">
+                {metricTrends.unitsSoldTrend.currentValue}
+              </span>
+            </div>
+            <span className="text-[11px] font-bold text-agora-ink-muted mt-0.5">Units Sold</span>
           </div>
         </div>
 
-        {/* Units Sold KPI */}
-        <div
-          onClick={() => handleOpenDrilldown('Units Sold', 'UNITS')}
-          className="ledger-card p-3.5 sm:p-4 cursor-pointer hover:border-agora-terracotta transition-all group shadow-sm"
-        >
-          <div className="flex items-center justify-between text-agora-ink-muted text-xs font-bold">
-            <span>Units Sold</span>
-            <Package className="w-4 h-4 text-agora-terracotta group-hover:scale-110 transition-transform" />
-          </div>
-          <div className="text-xl sm:text-2xl font-serif font-black text-agora-ink mt-1.5">
-            {metricTrends.unitsSoldTrend.currentValue} items
-          </div>
-          <div className="flex items-center gap-1.5 mt-1.5">
-            <span
-              className={`text-xs font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-0.5 ${
-                metricTrends.unitsSoldTrend.isIncrease
-                  ? 'bg-agora-sage-light text-agora-sage border border-agora-sage-border'
-                  : 'bg-agora-brick-light text-agora-brick border border-agora-brick-border'
-              }`}
-            >
-              {metricTrends.unitsSoldTrend.isIncrease ? (
-                <ArrowUpRight className="w-3 h-3" />
-              ) : (
-                <ArrowDownRight className="w-3 h-3" />
-              )}
-              {metricTrends.unitsSoldTrend.percentageChange}%
+        {/* Conditional Stock Alerts Pill (Renders ONLY when stockHealthItems.length > 0) */}
+        {stockHealthItems.length > 0 && (
+          <button
+            type="button"
+            onClick={() => {
+              window.location.hash = 'inventory?filter=low_stock';
+            }}
+            className="w-full flex items-center justify-between px-3.5 py-2.5 bg-agora-gold-light border border-agora-gold-border text-agora-gold rounded-xl text-xs font-bold hover:bg-agora-gold-light/80 transition-all shadow-sm active:scale-[0.99]"
+          >
+            <span className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-agora-gold shrink-0 animate-pulse" />
+              <span>{stockHealthItems.length} Stock Alert{stockHealthItems.length > 1 ? 's' : ''} Need Attention</span>
             </span>
-            <span className="text-[10px] text-agora-ink-muted font-medium">vs prev period</span>
-          </div>
-        </div>
-
-        {/* Inventory Alerts KPI */}
-        <div
-          onClick={() => handleOpenDrilldown('Stock Alerts', 'STOCK_HEALTH')}
-          className="ledger-card p-3.5 sm:p-4 cursor-pointer border-agora-terracotta/40 hover:border-agora-terracotta bg-agora-terracotta-light/30 transition-all group shadow-sm"
-        >
-          <div className="flex items-center justify-between text-agora-terracotta text-xs font-bold">
-            <span>Stock Alerts</span>
-            <AlertTriangle className="w-4 h-4 text-agora-terracotta group-hover:scale-110 transition-transform" />
-          </div>
-          <div className="text-xl sm:text-2xl font-serif font-black text-agora-terracotta mt-1.5">
-            {stockHealthItems.length} alerts
-          </div>
-          <span className="text-[10px] text-agora-terracotta mt-1.5 block font-bold">
-            Tap to view health bars
-          </span>
-        </div>
+            <span className="text-[11px] font-extrabold uppercase tracking-wider underline flex items-center gap-1">
+              View Items &rarr;
+            </span>
+          </button>
+        )}
       </div>
 
-      {/* Wallet-App Area Chart with Gradient Fill & Real-time Touch Scrubber */}
+      {/* Wallet-App Area Chart with Dynamic Trend Color & Real-time Touch Scrubber */}
       <div className="ledger-card p-4 sm:p-5 shadow-sm space-y-3 sm:space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-agora-terracotta" />
+            <BarChart3 className="w-5 h-5 text-agora-ink-muted" />
             <h3 className="font-serif font-bold text-agora-ink text-sm sm:text-base">Revenue Trajectory</h3>
           </div>
 
           <div className="flex items-center gap-3 text-xs font-medium">
             <span className="flex items-center gap-1 text-agora-ink font-bold">
-              <span className="w-2.5 h-2.5 rounded-full bg-agora-terracotta inline-block" /> Current
+              <span className={`w-2.5 h-2.5 rounded-full inline-block ${isRevenueIncrease ? 'bg-agora-sage' : 'bg-agora-brick'}`} /> Current
             </span>
             <span className="flex items-center gap-1 text-agora-ink-muted">
               <span className="w-2.5 h-2.5 rounded-full bg-agora-brass inline-block" /> Previous
@@ -294,13 +266,13 @@ export default function AnalyticsView() {
           </div>
         </div>
 
-        <div className="h-64 sm:h-72 w-full pt-1">
+        <div className="h-64 sm:h-72 w-full pt-1 touch-none">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={revenueTrendData}>
               <defs>
                 <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#C1502E" stopOpacity={0.35}/>
-                  <stop offset="95%" stopColor="#C1502E" stopOpacity={0.0}/>
+                  <stop offset="5%" stopColor={trendColorHex} stopOpacity={0.35}/>
+                  <stop offset="95%" stopColor={trendColorHex} stopOpacity={0.0}/>
                 </linearGradient>
                 <linearGradient id="colorPrev" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#8B7355" stopOpacity={0.15}/>
@@ -335,11 +307,11 @@ export default function AnalyticsView() {
                 type="monotone"
                 dataKey="currentPeriodRevenue"
                 name="Current Period"
-                stroke="#C1502E"
+                stroke={trendColorHex}
                 fill="url(#colorRev)"
                 strokeWidth={3}
-                dot={{ fill: '#C1502E', r: 4 }}
-                activeDot={{ r: 7 }}
+                dot={{ fill: trendColorHex, r: 4 }}
+                activeDot={{ fill: trendColorHex, r: 7 }}
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -352,7 +324,7 @@ export default function AnalyticsView() {
         <div className="ledger-card p-4 sm:p-5 space-y-3 shadow-sm">
           <div className="flex items-center justify-between pb-2 border-b border-agora-border">
             <div className="flex items-center gap-2">
-              <Clock className="w-5 h-5 text-agora-terracotta" />
+              <Clock className="w-5 h-5 text-agora-ink-muted" />
               <h3 className="font-serif font-bold text-agora-ink text-sm sm:text-base">Peak Sales Hours</h3>
             </div>
             <span className="text-[11px] text-agora-ink-muted">({trendDays}d window)</span>
@@ -370,7 +342,7 @@ export default function AnalyticsView() {
                     name === 'revenue' ? 'Revenue' : 'Sales',
                   ]}
                 />
-                <Bar dataKey="salesCount" fill="#C1502E" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="salesCount" fill="#8B7355" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -380,7 +352,7 @@ export default function AnalyticsView() {
         <div className="ledger-card p-4 sm:p-5 space-y-3 shadow-sm">
           <div className="flex items-center justify-between pb-2 border-b border-agora-border">
             <div className="flex items-center gap-2">
-              <Layers className="w-5 h-5 text-agora-terracotta" />
+              <Layers className="w-5 h-5 text-agora-ink-muted" />
               <h3 className="font-serif font-bold text-agora-ink text-sm sm:text-base">Category Performance</h3>
             </div>
             <span className="text-[11px] text-agora-ink-muted">Net sales breakdown</span>
@@ -415,7 +387,7 @@ export default function AnalyticsView() {
       <div className="ledger-card p-4 sm:p-5 space-y-3 shadow-sm">
         <div className="flex items-center justify-between pb-2 border-b border-agora-border">
           <div className="flex items-center gap-2">
-            <ShieldAlert className="w-5 h-5 text-agora-terracotta" />
+            <ShieldAlert className="w-5 h-5 text-agora-gold" />
             <h3 className="font-serif font-bold text-agora-ink text-sm sm:text-base">Stock Health & Alerts</h3>
           </div>
           <span className="text-xs text-agora-ink-muted">Reorder list</span>
@@ -445,7 +417,7 @@ export default function AnalyticsView() {
                         Expiring ({item.daysUntilExpiry}d)
                       </span>
                     ) : (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-agora-terracotta-light text-agora-terracotta border border-agora-terracotta-border">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-agora-gold-light text-agora-gold border border-agora-gold-border">
                         Low Stock
                       </span>
                     )
@@ -461,7 +433,7 @@ export default function AnalyticsView() {
       <div className="ledger-card p-4 sm:p-5 space-y-3 shadow-sm">
         <div className="flex items-center justify-between pb-2 border-b border-agora-border">
           <div className="flex items-center gap-2">
-            <History className="w-5 h-5 text-agora-terracotta" />
+            <History className="w-5 h-5 text-agora-ink-muted" />
             <h3 className="font-serif font-bold text-agora-ink text-sm sm:text-base">Register Closures Log</h3>
           </div>
           <span className="text-xs text-agora-ink-muted">End-of-day reconciliation</span>

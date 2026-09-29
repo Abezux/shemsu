@@ -104,6 +104,7 @@ export const api = {
               unit_type: productData.unit_type || 'piece',
               attributes: productData.attributes || {},
               image_url: productData.image_url || '',
+              is_favorite: productData.is_favorite ?? false,
               updated_at: now,
             })
             .eq('id', productData.id)
@@ -140,6 +141,7 @@ export const api = {
               unit_type: productData.unit_type || 'piece',
               attributes: productData.attributes || {},
               image_url: productData.image_url || '',
+              is_favorite: productData.is_favorite ?? false,
             })
             .select('*')
             .single();
@@ -225,6 +227,36 @@ export const api = {
     setLocal(PRODUCTS_KEY, products);
     setLocal(MOVEMENTS_KEY, movements);
     return newProduct;
+  },
+
+  toggleFavoriteProduct: async (id: string, isFavorite: boolean): Promise<Product | null> => {
+    if (isSupabaseConfigured()) {
+      const storeId = await getActiveStoreId();
+      if (storeId) {
+        const { data, error } = await supabase
+          .from('products')
+          .update({ is_favorite: isFavorite, updated_at: new Date().toISOString() })
+          .eq('id', id)
+          .eq('store_id', storeId)
+          .select('*')
+          .single();
+
+        if (error) {
+          console.error('Error toggling favorite:', error);
+        } else {
+          return data as Product;
+        }
+      }
+    }
+
+    const products = getLocal<Product[]>(PRODUCTS_KEY, []);
+    const idx = products.findIndex((p) => p.id === id);
+    if (idx !== -1) {
+      products[idx] = { ...products[idx], is_favorite: isFavorite, updated_at: new Date().toISOString() };
+      setLocal(PRODUCTS_KEY, products);
+      return products[idx];
+    }
+    return null;
   },
 
   deleteProduct: async (id: string): Promise<boolean> => {

@@ -215,11 +215,8 @@ export default function SalesView() {
         <div>
           <h1 className="text-xl sm:text-2xl font-serif font-black text-agora-ink tracking-tight flex items-center gap-2">
             <History className="w-6 h-6 sm:w-7 sm:h-7 text-agora-terracotta" />
-            Sales Ledger
+            Sales
           </h1>
-          <p className="text-xs text-agora-ink-muted mt-0.5 font-medium">
-            Recent receipts, payment methods, partial refunds, and voids
-          </p>
         </div>
       </div>
 

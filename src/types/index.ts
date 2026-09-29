@@ -36,6 +36,7 @@ export interface Product {
   attributes?: Record<string, string | number | boolean>; // e.g. { expiry_date: "2026-10-15", batch_no: "B-902", prescription_required: false }
   barcode?: string;
   image_url?: string;
+  is_favorite?: boolean;
   created_at: string;
   updated_at: string;
 }

@@ -16,9 +16,10 @@ function AppContent() {
 
   useEffect(() => {
     const handleHash = () => {
-      const hash = window.location.hash.replace('#', '');
-      if (['sell', 'inventory', 'sales', 'audit', 'analytics'].includes(hash)) {
-        setActiveTab(hash);
+      const rawHash = window.location.hash.replace('#', '');
+      const baseTab = rawHash.split('?')[0];
+      if (['sell', 'inventory', 'sales', 'audit', 'analytics'].includes(baseTab)) {
+        setActiveTab(baseTab);
       }
     };
 

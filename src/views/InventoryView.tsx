@@ -21,7 +21,8 @@ import {
   TrendingUp, 
   Layers,
   ShieldAlert,
-  Calendar
+  Calendar,
+  Star
 } from 'lucide-react';
 
 export default function InventoryView() {
@@ -66,7 +67,19 @@ export default function InventoryView() {
 
   useEffect(() => {
     loadData();
+    if (window.location.hash.includes('filter=low_stock')) {
+      setFilterLowStockOnly(true);
+    }
   }, []);
+
+  const handleToggleFavorite = async (p: Product, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newFav = !p.is_favorite;
+    setProducts((prev) =>
+      prev.map((item) => (item.id === p.id ? { ...item, is_favorite: newFav } : item))
+    );
+    await api.toggleFavoriteProduct(p.id, newFav);
+  };
 
   const restockSuggestions = useMemo(() => {
     return api.getSmartRestockSuggestions(products, sales);
@@ -77,7 +90,7 @@ export default function InventoryView() {
     products.forEach((p) => {
       if (p.category) set.add(p.category);
     });
-    return ['ALL', ...Array.from(set)];
+    return ['ALL', 'FAVORITES', ...Array.from(set)];
   }, [products]);
 
   const now = Date.now();
@@ -85,7 +98,12 @@ export default function InventoryView() {
 
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
-      const matchesCat = selectedCategory === 'ALL' || p.category === selectedCategory;
+      const matchesCat =
+        selectedCategory === 'ALL'
+          ? true
+          : selectedCategory === 'FAVORITES'
+          ? p.is_favorite === true
+          : p.category === selectedCategory;
       const matchesSearch =
         p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -183,12 +201,9 @@ export default function InventoryView() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-serif font-black text-agora-ink tracking-tight flex items-center gap-2">
-            <Package className="w-6 h-6 sm:w-7 sm:h-7 text-agora-terracotta" />
-            Product Catalog
+            <Package className="w-6 h-6 sm:w-7 sm:h-7 text-agora-ink-muted" />
+            Products
           </h1>
-          <p className="text-xs text-agora-ink-muted mt-0.5 font-medium">
-            Manage inventory items, prices, restock suggestions, and stock health
-          </p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -206,19 +221,19 @@ export default function InventoryView() {
         <div className="ledger-card p-3 sm:p-4">
           <div className="flex items-center justify-between text-agora-ink-muted text-xs font-bold">
             <span>Total Products</span>
-            <Layers className="w-4 h-4 text-agora-terracotta" />
+            <Layers className="w-4 h-4 text-agora-ink-muted" />
           </div>
           <div className="text-xl sm:text-2xl font-serif font-black text-agora-ink mt-1.5">{products.length}</div>
           <span className="text-[10px] text-agora-ink-muted font-medium">Active catalog items</span>
         </div>
 
-        <div className="ledger-card p-3 sm:p-4 border-agora-terracotta/40 bg-agora-terracotta-light/30">
-          <div className="flex items-center justify-between text-agora-terracotta text-xs font-bold">
+        <div className="ledger-card p-3 sm:p-4 border-agora-gold/40 bg-agora-gold-light/40">
+          <div className="flex items-center justify-between text-agora-gold text-xs font-bold">
             <span>Low Stock</span>
-            <AlertTriangle className="w-4 h-4 text-agora-terracotta" />
+            <AlertTriangle className="w-4 h-4 text-agora-gold" />
           </div>
-          <div className="text-xl sm:text-2xl font-serif font-black text-agora-terracotta mt-1.5">{lowStockCount}</div>
-          <span className="text-[10px] text-agora-terracotta font-semibold">Needs restock</span>
+          <div className="text-xl sm:text-2xl font-serif font-black text-agora-gold mt-1.5">{lowStockCount}</div>
+          <span className="text-[10px] text-agora-gold font-semibold">Needs restock</span>
         </div>
 
         <div className="ledger-card p-3 sm:p-4 border-agora-brick-border bg-agora-brick-light/30">
@@ -281,7 +296,7 @@ export default function InventoryView() {
                       : 'bg-agora-bg border-agora-border text-agora-ink-muted hover:text-agora-ink'
                   }`}
                 >
-                  {cat}
+                  {cat === 'FAVORITES' ? '★ Favorites' : cat}
                 </button>
               ))}
             </div>
@@ -301,12 +316,12 @@ export default function InventoryView() {
                 }}
                 className={`w-full flex items-center justify-between p-3 rounded-xl border text-xs font-bold transition-all ${
                   filterLowStockOnly
-                    ? 'bg-agora-terracotta/15 border-agora-terracotta text-agora-terracotta'
+                    ? 'bg-agora-gold-light border-agora-gold-border text-agora-gold'
                     : 'bg-agora-bg border-agora-border text-agora-ink-muted hover:text-agora-ink'
                 }`}
               >
                 <span className="flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-agora-terracotta" />
+                  <AlertTriangle className="w-4 h-4 text-agora-gold" />
                   Show Low Stock Items Only
                 </span>
                 <span>({lowStockCount})</span>
@@ -383,7 +398,25 @@ export default function InventoryView() {
                     onClick={() => handleOpenEdit(p)}
                     swipeActions={swipeActions}
                     icon={<ProductAvatar name={p.name} imageUrl={p.image_url} size="md" />}
-                    title={p.name}
+                    title={
+                      <div className="flex items-center gap-1.5">
+                        <span>{p.name}</span>
+                        <button
+                          type="button"
+                          onClick={(e) => handleToggleFavorite(p, e)}
+                          title={p.is_favorite ? 'Unpin favorite' : 'Pin to favorites'}
+                          className="p-0.5 rounded text-agora-brass hover:bg-agora-bg transition-colors"
+                        >
+                          <Star
+                            className={`w-3.5 h-3.5 ${
+                              p.is_favorite
+                                ? 'fill-agora-brass text-agora-brass'
+                                : 'text-agora-ink-muted/50 hover:text-agora-brass'
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    }
                     subtitle={
                       <div className="flex items-center gap-2 text-[11px]">
                         <span>Cost: {p.cost_price ? formatCurrency(p.cost_price, settings.currency_symbol) : '-'}</span>
@@ -403,7 +436,7 @@ export default function InventoryView() {
                             Out of Stock
                           </span>
                         ) : isLow ? (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-agora-terracotta-light text-agora-terracotta border border-agora-terracotta-border">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-agora-gold-light text-agora-gold border border-agora-gold-border">
                             Low ({p.stock_quantity})
                           </span>
                         ) : (
@@ -413,7 +446,7 @@ export default function InventoryView() {
                         )}
 
                         {(isLow || isOut) && suggestedQty && (
-                          <span className="text-[9px] font-bold text-agora-terracotta">
+                          <span className="text-[9px] font-bold text-agora-gold">
                             Reorder: +{suggestedQty}
                           </span>
                         )}

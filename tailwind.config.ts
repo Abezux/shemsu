@@ -38,6 +38,12 @@ const config: Config = {
             light: '#F8ECEB',
             border: '#E6BCB8',
           },
+          gold: {
+            DEFAULT: '#C99A2E',
+            hover: '#B08525',
+            light: '#FBF3DE',
+            border: '#EAD9A0',
+          },
         },
       },
       fontFamily: {
