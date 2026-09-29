@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Product, ProductCategory, UnitType, StoreSettings } from '@/types';
 import { parseInputToCents, centsToDecimalString } from '@/utils/currency';
 import { api } from '@/services/api';
+import BottomSheet from '@/components/common/BottomSheet';
 import { X, Package, AlertCircle } from 'lucide-react';
 import ProductAvatar from '@/components/common/ProductAvatar';
 
@@ -122,24 +123,19 @@ export default function AddEditProductModal({
   const businessType = settings?.business_type || 'GENERAL_RETAIL';
 
   return (
-    <div className="fixed inset-0 z-50 bg-agora-ink/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-agora-card border border-agora-border rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 text-agora-ink">
-        <div className="px-6 py-4 border-b border-agora-border flex items-center justify-between bg-agora-bg/50">
-          <div className="flex items-center gap-2">
-            <Package className="w-5 h-5 text-agora-terracotta" />
-            <h3 className="font-serif font-bold text-agora-ink text-lg">
-              {productToEdit ? 'Edit Product' : 'Add Product'}
-            </h3>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-agora-ink-muted hover:text-agora-ink p-1 rounded-lg hover:bg-agora-bg transition-all"
-          >
-            <X className="w-5 h-5" />
-          </button>
+    <BottomSheet
+      isOpen={isOpen}
+      onClose={onClose}
+      title={
+        <div className="flex items-center gap-2">
+          <Package className="w-5 h-5 text-agora-terracotta shrink-0" />
+          <span className="font-serif font-bold text-agora-ink text-lg">
+            {productToEdit ? 'Edit Product' : 'Add Product'}
+          </span>
         </div>
-
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
           {/* Name & Avatar Preview */}
           <div className="space-y-1">
             <label className="text-xs font-bold text-agora-ink">Product Name</label>
@@ -343,7 +339,6 @@ export default function AddEditProductModal({
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </BottomSheet>
   );
 }

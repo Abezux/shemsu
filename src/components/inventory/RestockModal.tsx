@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Product } from '@/types';
+import BottomSheet from '@/components/common/BottomSheet';
 import { X, PlusCircle, ArrowUpRight } from 'lucide-react';
 import ProductAvatar from '@/components/common/ProductAvatar';
 
@@ -55,22 +56,17 @@ export default function RestockModal({
   const newTotalStock = product.stock_quantity + (addQuantity || 0);
 
   return (
-    <div className="fixed inset-0 z-50 bg-agora-ink/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-agora-card border border-agora-border rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 text-agora-ink">
-        <div className="px-6 py-4 border-b border-agora-border flex items-center justify-between bg-agora-bg/50">
-          <div className="flex items-center gap-2">
-            <PlusCircle className="w-5 h-5 text-agora-terracotta" />
-            <h3 className="font-serif font-bold text-agora-ink text-lg">Restock Inventory</h3>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-agora-ink-muted hover:text-agora-ink p-1 rounded-lg hover:bg-agora-bg transition-all"
-          >
-            <X className="w-5 h-5" />
-          </button>
+    <BottomSheet
+      isOpen={isOpen}
+      onClose={onClose}
+      title={
+        <div className="flex items-center gap-2">
+          <PlusCircle className="w-5 h-5 text-agora-terracotta shrink-0" />
+          <span className="font-serif font-bold text-agora-ink text-lg">Restock Inventory</span>
         </div>
-
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
           {/* Target Product Summary */}
           <div className="bg-agora-bg p-4 rounded-2xl border border-agora-border flex items-center gap-3">
             <ProductAvatar name={product.name} imageUrl={product.image_url} size="lg" />
@@ -174,7 +170,6 @@ export default function RestockModal({
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </BottomSheet>
   );
 }

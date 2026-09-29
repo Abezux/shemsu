@@ -306,20 +306,23 @@ export default function SellView() {
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-                  selectedCategory === cat
-                    ? 'bg-agora-terracotta text-agora-card shadow-sm'
-                    : 'bg-agora-card border border-agora-border text-agora-ink-muted hover:text-agora-ink hover:bg-agora-bg'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
+          <div className="relative">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none pr-6">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                    selectedCategory === cat
+                      ? 'bg-agora-terracotta text-agora-card shadow-sm'
+                      : 'bg-agora-card border border-agora-border text-agora-ink-muted hover:text-agora-ink hover:bg-agora-bg'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-agora-card to-transparent" />
           </div>
         </div>
 

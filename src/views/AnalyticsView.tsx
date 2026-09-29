@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Sale, Product, StoreSettings, RegisterClosure } from '@/types';
 import { api } from '@/services/api';
@@ -6,19 +8,17 @@ import { formatDate } from '@/utils/formatters';
 import { getSaleItemNetTotal } from '@/utils/revenue';
 import DrilldownModal from '@/components/analytics/DrilldownModal';
 import RegisterClosureModal from '@/components/reports/RegisterClosureModal';
+import ListRow from '@/components/common/ListRow';
+import ProductAvatar from '@/components/common/ProductAvatar';
 import {
   ResponsiveContainer,
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   BarChart,
   Bar,
-  PieChart,
-  Pie,
-  Cell,
   XAxis,
   YAxis,
   Tooltip,
-  Legend,
 } from 'recharts';
 import { 
   BarChart3, 
@@ -36,7 +36,6 @@ import {
   CheckCircle2,
   AlertCircle
 } from 'lucide-react';
-import ProductAvatar from '@/components/common/ProductAvatar';
 
 const CATEGORY_COLORS = ['#C1502E', '#8B7355', '#5C7A52', '#9B4038', '#A0958C', '#D9CFBF'];
 
@@ -100,7 +99,7 @@ export default function AnalyticsView() {
   };
 
   const metricTrends = useMemo(() => {
-    return api.getMetricTrends(sales, trendDays === 7 ? 1 : trendDays === 30 ? 7 : 30);
+    return api.getMetricTrends(sales, trendDays);
   }, [sales, trendDays]);
 
   const revenueTrendData = useMemo(() => {
@@ -125,9 +124,8 @@ export default function AnalyticsView() {
 
     return Object.entries(map).map(([name, value]) => ({
       name,
-      value: value / 100,
       valueCents: value,
-    }));
+    })).sort((a, b) => b.valueCents - a.valueCents);
   }, [sales, products]);
 
   const stockHealthItems = useMemo(() => {
@@ -143,85 +141,62 @@ export default function AnalyticsView() {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6 text-agora-ink">
-      {/* Title & Range Selector / Actions */}
+    <div className="space-y-4 sm:space-y-6 text-agora-ink pb-12">
+      {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-serif font-black text-agora-ink tracking-tight flex items-center gap-2">
             <BarChart3 className="w-6 h-6 sm:w-7 sm:h-7 text-agora-terracotta" />
-            Reports & Insights
+            Financial Ledger & Insights
           </h1>
           <p className="text-xs text-agora-ink-muted mt-0.5 font-medium">
-            Sales trends, cash register closures, peak hours, and inventory alerts
+            Revenue trajectory, category performance, peak hours, and cash closures
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Close Register Action */}
-          <button
-            onClick={() => setIsClosureModalOpen(true)}
-            className="flex items-center gap-2 px-3.5 py-2 bg-agora-terracotta hover:bg-agora-terracotta-hover text-agora-card font-serif font-bold rounded-xl shadow-md transition-all active:scale-95 text-xs sm:text-sm"
-          >
-            <Lock className="w-4 h-4" /> Close Register
-          </button>
+        <button
+          onClick={() => setIsClosureModalOpen(true)}
+          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-agora-terracotta hover:bg-agora-terracotta-hover text-agora-card font-serif font-bold rounded-xl shadow-md transition-all active:scale-95 text-xs sm:text-sm w-full sm:w-auto"
+        >
+          <Lock className="w-4 h-4" /> Close Register
+        </button>
+      </div>
 
-          {/* Range Selector */}
-          <div className="flex items-center gap-1 bg-agora-card border border-agora-border p-1 rounded-xl w-max">
-            {[
-              { days: 7, label: '7 Days' },
-              { days: 30, label: '30 Days' },
-              { days: 90, label: '90 Days' },
-            ].map((r) => (
-              <button
-                key={r.days}
-                onClick={() => setTrendDays(r.days)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  trendDays === r.days
-                    ? 'bg-agora-terracotta text-agora-card shadow-sm'
-                    : 'text-agora-ink-muted hover:text-agora-ink'
-                }`}
-              >
-                {r.label}
-              </button>
-            ))}
-          </div>
+      {/* Wallet-App Balance Card */}
+      <div className="ledger-card p-6 text-center space-y-3 shadow-sm bg-agora-card border border-agora-border">
+        <span className="text-xs font-serif font-bold uppercase tracking-wider text-agora-brass">
+          Net Revenue ({trendDays === 1 ? 'Today' : `${trendDays} Days`})
+        </span>
+        <h2 className="text-4xl sm:text-5xl font-serif font-black text-agora-terracotta tracking-tight">
+          {formatCurrency(metricTrends.revenueTrend.currentValue, settings.currency_symbol)}
+        </h2>
+
+        {/* Segmented Time-Range Control */}
+        <div className="flex items-center justify-center gap-1 bg-agora-bg border border-agora-border p-1 rounded-2xl w-max mx-auto">
+          {[
+            { days: 1, label: 'Today' },
+            { days: 7, label: '7D' },
+            { days: 30, label: '30D' },
+            { days: 90, label: '90D' },
+          ].map((r) => (
+            <button
+              key={r.days}
+              onClick={() => setTrendDays(r.days)}
+              className={`px-4 py-1.5 rounded-xl text-xs font-serif font-bold transition-all ${
+                trendDays === r.days
+                  ? 'bg-agora-terracotta text-agora-card shadow-sm'
+                  : 'text-agora-ink-muted hover:text-agora-ink'
+              }`}
+            >
+              {r.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
-        {/* Revenue KPI */}
-        <div
-          onClick={() => handleOpenDrilldown('Revenue Growth', 'REVENUE')}
-          className="ledger-card p-3.5 sm:p-4 cursor-pointer hover:border-agora-terracotta transition-all group shadow-sm"
-        >
-          <div className="flex items-center justify-between text-agora-ink-muted text-xs font-bold">
-            <span>Total Revenue</span>
-            <DollarSign className="w-4 h-4 text-agora-terracotta group-hover:scale-110 transition-transform" />
-          </div>
-          <div className="text-xl sm:text-2xl font-serif font-black text-agora-terracotta mt-1.5">
-            {formatCurrency(metricTrends.revenueTrend.currentValue, settings.currency_symbol)}
-          </div>
-          <div className="flex items-center gap-1.5 mt-1.5">
-            <span
-              className={`text-xs font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-0.5 ${
-                metricTrends.revenueTrend.isIncrease
-                  ? 'bg-agora-sage-light text-agora-sage border border-agora-sage-border'
-                  : 'bg-agora-brick-light text-agora-brick border border-agora-brick-border'
-              }`}
-            >
-              {metricTrends.revenueTrend.isIncrease ? (
-                <ArrowUpRight className="w-3 h-3" />
-              ) : (
-                <ArrowDownRight className="w-3 h-3" />
-              )}
-              {metricTrends.revenueTrend.percentageChange}%
-            </span>
-            <span className="text-[10px] text-agora-ink-muted font-medium">vs prev</span>
-          </div>
-        </div>
-
-        {/* Completed Sales KPI */}
+      {/* KPI Overview Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
+        {/* Sales Count KPI */}
         <div
           onClick={() => handleOpenDrilldown('Transactions', 'SALES')}
           className="ledger-card p-3.5 sm:p-4 cursor-pointer hover:border-agora-terracotta transition-all group shadow-sm"
@@ -248,7 +223,7 @@ export default function AnalyticsView() {
               )}
               {metricTrends.salesCountTrend.percentageChange}%
             </span>
-            <span className="text-[10px] text-agora-ink-muted font-medium">vs prev</span>
+            <span className="text-[10px] text-agora-ink-muted font-medium">vs prev period</span>
           </div>
         </div>
 
@@ -279,7 +254,7 @@ export default function AnalyticsView() {
               )}
               {metricTrends.unitsSoldTrend.percentageChange}%
             </span>
-            <span className="text-[10px] text-agora-ink-muted font-medium">vs prev</span>
+            <span className="text-[10px] text-agora-ink-muted font-medium">vs prev period</span>
           </div>
         </div>
 
@@ -301,12 +276,12 @@ export default function AnalyticsView() {
         </div>
       </div>
 
-      {/* Revenue Line Chart */}
+      {/* Wallet-App Area Chart with Gradient Fill & Real-time Touch Scrubber */}
       <div className="ledger-card p-4 sm:p-5 shadow-sm space-y-3 sm:space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-agora-terracotta" />
-            <h3 className="font-serif font-bold text-agora-ink text-sm sm:text-base">Revenue Comparison</h3>
+            <h3 className="font-serif font-bold text-agora-ink text-sm sm:text-base">Revenue Trajectory</h3>
           </div>
 
           <div className="flex items-center gap-3 text-xs font-medium">
@@ -321,7 +296,17 @@ export default function AnalyticsView() {
 
         <div className="h-64 sm:h-72 w-full pt-1">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={revenueTrendData}>
+            <AreaChart data={revenueTrendData}>
+              <defs>
+                <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#C1502E" stopOpacity={0.35}/>
+                  <stop offset="95%" stopColor="#C1502E" stopOpacity={0.0}/>
+                </linearGradient>
+                <linearGradient id="colorPrev" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#8B7355" stopOpacity={0.15}/>
+                  <stop offset="95%" stopColor="#8B7355" stopOpacity={0.0}/>
+                </linearGradient>
+              </defs>
               <XAxis dataKey="dateLabel" stroke="#6E655F" fontSize={11} tickLine={false} />
               <YAxis
                 stroke="#6E655F"
@@ -330,36 +315,38 @@ export default function AnalyticsView() {
                 tickFormatter={(v) => `${settings.currency_symbol}${v / 100}`}
               />
               <Tooltip
+                trigger="hover"
                 contentStyle={{ backgroundColor: '#FFFDF8', borderColor: '#E5DCC8', borderRadius: '12px', color: '#211D1A' }}
                 formatter={(value: any) => [
                   formatCurrency(Number(value), settings.currency_symbol),
                   'Revenue',
                 ]}
               />
-              <Line
+              <Area
                 type="monotone"
                 dataKey="previousPeriodRevenue"
                 name="Previous Period"
                 stroke="#8B7355"
+                fill="url(#colorPrev)"
                 strokeWidth={2}
                 strokeDasharray="4 4"
-                dot={false}
               />
-              <Line
+              <Area
                 type="monotone"
                 dataKey="currentPeriodRevenue"
                 name="Current Period"
                 stroke="#C1502E"
+                fill="url(#colorRev)"
                 strokeWidth={3}
                 dot={{ fill: '#C1502E', r: 4 }}
-                activeDot={{ r: 6 }}
+                activeDot={{ r: 7 }}
               />
-            </LineChart>
+            </AreaChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      {/* Secondary Charts Grid */}
+      {/* Secondary Analytics: Peak Hours & Category Wallet Breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
         {/* Peak Hours Chart */}
         <div className="ledger-card p-4 sm:p-5 space-y-3 shadow-sm">
@@ -368,7 +355,7 @@ export default function AnalyticsView() {
               <Clock className="w-5 h-5 text-agora-terracotta" />
               <h3 className="font-serif font-bold text-agora-ink text-sm sm:text-base">Peak Sales Hours</h3>
             </div>
-            <span className="text-[11px] text-agora-ink-muted">({trendDays}d)</span>
+            <span className="text-[11px] text-agora-ink-muted">({trendDays}d window)</span>
           </div>
 
           <div className="h-56 sm:h-60 w-full pt-1">
@@ -389,53 +376,47 @@ export default function AnalyticsView() {
           </div>
         </div>
 
-        {/* Category Share Donut Chart */}
+        {/* Category Breakdown formatted as Wallet ListRow */}
         <div className="ledger-card p-4 sm:p-5 space-y-3 shadow-sm">
           <div className="flex items-center justify-between pb-2 border-b border-agora-border">
             <div className="flex items-center gap-2">
               <Layers className="w-5 h-5 text-agora-terracotta" />
-              <h3 className="font-serif font-bold text-agora-ink text-sm sm:text-base">Category Breakdown</h3>
+              <h3 className="font-serif font-bold text-agora-ink text-sm sm:text-base">Category Performance</h3>
             </div>
-            <span className="text-[11px] text-agora-ink-muted">Revenue %</span>
+            <span className="text-[11px] text-agora-ink-muted">Net sales breakdown</span>
           </div>
 
-          <div className="h-56 sm:h-60 w-full flex items-center justify-center">
-            {categoryChartData.length === 0 ? (
-              <p className="text-xs text-agora-ink-muted">No sales recorded yet.</p>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={categoryChartData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={45}
-                    outerRadius={75}
-                    paddingAngle={4}
-                    dataKey="value"
-                  >
-                    {categoryChartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={CATEGORY_COLORS[index % CATEGORY_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#FFFDF8', borderColor: '#E5DCC8', borderRadius: '12px', color: '#211D1A' }}
-                    formatter={(val: any) => [`$${Number(val).toFixed(2)}`, 'Revenue']}
-                  />
-                  <Legend verticalAlign="bottom" height={36} iconType="circle" />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
-          </div>
+          {categoryChartData.length === 0 ? (
+            <div className="p-6 text-center text-xs text-agora-ink-muted">No sales recorded yet.</div>
+          ) : (
+            <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+              {categoryChartData.map((cat, idx) => (
+                <ListRow
+                  key={cat.name}
+                  icon={
+                    <div
+                      className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-agora-card text-xs"
+                      style={{ backgroundColor: CATEGORY_COLORS[idx % CATEGORY_COLORS.length] }}
+                    >
+                      {cat.name.substring(0, 2).toUpperCase()}
+                    </div>
+                  }
+                  title={cat.name}
+                  subtitle="Product Category"
+                  value={formatCurrency(cat.valueCents, settings.currency_symbol)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Visual Stock Health List */}
+      {/* Stock Health & Alerts formatted as ListRow */}
       <div className="ledger-card p-4 sm:p-5 space-y-3 shadow-sm">
         <div className="flex items-center justify-between pb-2 border-b border-agora-border">
           <div className="flex items-center gap-2">
             <ShieldAlert className="w-5 h-5 text-agora-terracotta" />
-            <h3 className="font-serif font-bold text-agora-ink text-sm sm:text-base">Stock Alerts & Health</h3>
+            <h3 className="font-serif font-bold text-agora-ink text-sm sm:text-base">Stock Health & Alerts</h3>
           </div>
           <span className="text-xs text-agora-ink-muted">Reorder list</span>
         </div>
@@ -445,56 +426,31 @@ export default function AnalyticsView() {
             All products have healthy stock levels!
           </div>
         ) : (
-          <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+          <div className="space-y-1.5 max-h-80 overflow-y-auto pr-1">
             {stockHealthItems.map((item) => {
               const p = item.product;
-              const percent = Math.min(100, Math.round((p.stock_quantity / p.low_stock_threshold) * 100));
-
               return (
-                <div
+                <ListRow
                   key={p.id}
-                  className="bg-agora-bg p-3 rounded-2xl border border-agora-border flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <ProductAvatar name={p.name} imageUrl={p.image_url} size="md" />
-                    <div>
-                      <h4 className="font-bold text-agora-ink text-xs sm:text-sm leading-snug">{p.name}</h4>
-                      <div className="flex items-center gap-2 mt-0.5 text-xs text-agora-ink-muted">
-                        <span>Stock: <strong className="font-serif text-agora-ink">{p.stock_quantity} {p.unit_type || 'pcs'}</strong></span>
-                        <span>•</span>
-                        <span>Alert: <strong>{p.low_stock_threshold}</strong></span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="w-full sm:w-56 space-y-1">
-                    <div className="flex justify-between text-[11px] font-bold">
-                      {item.isExpiringSoon ? (
-                        <span className="text-agora-brick flex items-center gap-1">
-                          <AlertTriangle className="w-3 h-3" /> Expiring in {item.daysUntilExpiry} days
-                        </span>
-                      ) : (
-                        <span className="text-agora-terracotta flex items-center gap-1">
-                          <AlertTriangle className="w-3 h-3" /> Low Stock ({percent}%)
-                        </span>
-                      )}
-                      <span className="text-agora-ink">{p.stock_quantity} / {p.low_stock_threshold}</span>
-                    </div>
-
-                    <div className="w-full h-2 rounded-full bg-agora-card overflow-hidden border border-agora-border">
-                      <div
-                        className={`h-full rounded-full transition-all ${
-                          item.isExpiringSoon
-                            ? 'bg-agora-brick'
-                            : p.stock_quantity <= 0
-                            ? 'bg-agora-brick'
-                            : 'bg-agora-terracotta'
-                        }`}
-                        style={{ width: `${Math.max(5, percent)}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
+                  icon={<ProductAvatar name={p.name} imageUrl={p.image_url} size="md" />}
+                  title={p.name}
+                  subtitle={
+                    <span>
+                      Stock: <strong>{p.stock_quantity} {p.unit_type || 'pcs'}</strong> • Alert: {p.low_stock_threshold}
+                    </span>
+                  }
+                  badge={
+                    item.isExpiringSoon ? (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-agora-brick-light border border-agora-brick-border text-agora-brick">
+                        Expiring ({item.daysUntilExpiry}d)
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-agora-terracotta-light text-agora-terracotta border border-agora-terracotta-border">
+                        Low Stock
+                      </span>
+                    )
+                  }
+                />
               );
             })}
           </div>
@@ -516,61 +472,45 @@ export default function AnalyticsView() {
             No register closures recorded yet.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-agora-bg/80 border-b border-agora-border text-agora-ink-muted uppercase tracking-wider font-bold">
-                <tr>
-                  <th className="p-3">Closed Date</th>
-                  <th className="p-3">Expected Cash</th>
-                  <th className="p-3">Counted Cash</th>
-                  <th className="p-3">Variance</th>
-                  <th className="p-3">Notes</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-agora-border">
-                {registerClosures.map((c) => {
-                  const variance = c.variance;
-                  return (
-                    <tr key={c.id} className="ledger-row">
-                      <td className="p-3 font-semibold text-agora-ink whitespace-nowrap">
-                        {formatDate(c.closed_at)}
-                      </td>
-                      <td className="p-3 font-serif font-bold text-agora-ink whitespace-nowrap">
-                        {formatCurrency(c.expected_cash, settings.currency_symbol)}
-                      </td>
-                      <td className="p-3 font-serif font-bold text-agora-ink whitespace-nowrap">
-                        {formatCurrency(c.counted_cash, settings.currency_symbol)}
-                      </td>
-                      <td className="p-3 whitespace-nowrap">
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-1 ${
-                            variance === 0
-                              ? 'bg-agora-sage-light text-agora-sage border border-agora-sage-border'
-                              : variance > 0
-                              ? 'bg-agora-brass/10 text-agora-brass border border-agora-brass/30'
-                              : 'bg-agora-brick-light text-agora-brick border border-agora-brick-border'
-                          }`}
-                        >
-                          {variance === 0 ? (
-                            <CheckCircle2 className="w-3 h-3 text-agora-sage" />
-                          ) : (
-                            <AlertCircle className="w-3 h-3" />
-                          )}
-                          {variance === 0
-                            ? 'Balanced'
-                            : variance > 0
-                            ? `+${formatCurrency(variance, settings.currency_symbol)}`
-                            : formatCurrency(variance, settings.currency_symbol)}
-                        </span>
-                      </td>
-                      <td className="p-3 text-agora-ink-muted text-xs max-w-xs truncate">
-                        {c.notes || '-'}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
+            {registerClosures.map((c) => {
+              const variance = c.variance;
+              return (
+                <ListRow
+                  key={c.id}
+                  icon={
+                    <div className="bg-agora-terracotta/10 p-2.5 rounded-xl border border-agora-terracotta/20 shrink-0">
+                      <Lock className="w-4 h-4 text-agora-terracotta" />
+                    </div>
+                  }
+                  title={formatDate(c.closed_at)}
+                  subtitle={c.notes || 'End of day closure'}
+                  value={formatCurrency(c.counted_cash, settings.currency_symbol)}
+                  badge={
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-1 ${
+                        variance === 0
+                          ? 'bg-agora-sage-light text-agora-sage border border-agora-sage-border'
+                          : variance > 0
+                          ? 'bg-agora-brass/10 text-agora-brass border border-agora-brass/30'
+                          : 'bg-agora-brick-light text-agora-brick border border-agora-brick-border'
+                      }`}
+                    >
+                      {variance === 0 ? (
+                        <CheckCircle2 className="w-3 h-3 text-agora-sage" />
+                      ) : (
+                        <AlertCircle className="w-3 h-3" />
+                      )}
+                      {variance === 0
+                        ? 'Balanced'
+                        : variance > 0
+                        ? `+${formatCurrency(variance, settings.currency_symbol)}`
+                        : formatCurrency(variance, settings.currency_symbol)}
+                    </span>
+                  }
+                />
+              );
+            })}
           </div>
         )}
       </div>

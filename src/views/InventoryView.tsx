@@ -1,9 +1,15 @@
+'use client';
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Product, StoreSettings, Sale } from '@/types';
 import { api } from '@/services/api';
 import { formatCurrency } from '@/utils/currency';
 import AddEditProductModal from '@/components/inventory/AddEditProductModal';
 import RestockModal from '@/components/inventory/RestockModal';
+import ListRow, { SwipeAction } from '@/components/common/ListRow';
+import FilterSheet from '@/components/common/FilterSheet';
+import ListSkeleton from '@/components/common/ListSkeleton';
+import ProductAvatar from '@/components/common/ProductAvatar';
 import { 
   Package, 
   Plus, 
@@ -17,7 +23,6 @@ import {
   ShieldAlert,
   Calendar
 } from 'lucide-react';
-import ProductAvatar from '@/components/common/ProductAvatar';
 
 export default function InventoryView() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -101,6 +106,26 @@ export default function InventoryView() {
     });
   }, [products, selectedCategory, searchQuery, filterLowStockOnly, filterExpiringOnly, expiryCutoff]);
 
+  // Group products by Category with sticky headers
+  const groupedProducts = useMemo(() => {
+    const groups: { category: string; items: Product[] }[] = [];
+    const map = new Map<string, Product[]>();
+
+    filteredProducts.forEach((p) => {
+      const cat = p.category || 'General';
+      if (!map.has(cat)) {
+        map.set(cat, []);
+      }
+      map.get(cat)!.push(p);
+    });
+
+    map.forEach((items, category) => {
+      groups.push({ category, items });
+    });
+
+    return groups;
+  }, [filteredProducts]);
+
   // Inventory KPI calculations
   const totalValuationCents = useMemo(() => {
     return products.reduce((sum, p) => sum + p.price * p.stock_quantity, 0);
@@ -117,6 +142,8 @@ export default function InventoryView() {
       return !isNaN(exp) && exp <= expiryCutoff;
     }).length;
   }, [products, expiryCutoff]);
+
+  const activeFilterCount = (selectedCategory !== 'ALL' ? 1 : 0) + (filterLowStockOnly ? 1 : 0) + (filterExpiringOnly ? 1 : 0);
 
   const handleOpenAdd = () => {
     setProductToEdit(null);
@@ -151,16 +178,16 @@ export default function InventoryView() {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6 text-agora-ink">
+    <div className="space-y-4 sm:space-y-6 text-agora-ink pb-12">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-serif font-black text-agora-ink tracking-tight flex items-center gap-2">
             <Package className="w-6 h-6 sm:w-7 sm:h-7 text-agora-terracotta" />
-            Products
+            Product Catalog
           </h1>
           <p className="text-xs text-agora-ink-muted mt-0.5 font-medium">
-            Manage products, stock levels, and prices
+            Manage inventory items, prices, restock suggestions, and stock health
           </p>
         </div>
 
@@ -174,7 +201,7 @@ export default function InventoryView() {
         </div>
       </div>
 
-      {/* KPI Cards Banner (Compact Mobile Density) */}
+      {/* KPI Cards Banner */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
         <div className="ledger-card p-3 sm:p-4">
           <div className="flex items-center justify-between text-agora-ink-muted text-xs font-bold">
@@ -182,7 +209,7 @@ export default function InventoryView() {
             <Layers className="w-4 h-4 text-agora-terracotta" />
           </div>
           <div className="text-xl sm:text-2xl font-serif font-black text-agora-ink mt-1.5">{products.length}</div>
-          <span className="text-[10px] text-agora-ink-muted">Active items</span>
+          <span className="text-[10px] text-agora-ink-muted font-medium">Active catalog items</span>
         </div>
 
         <div className="ledger-card p-3 sm:p-4 border-agora-terracotta/40 bg-agora-terracotta-light/30">
@@ -211,200 +238,193 @@ export default function InventoryView() {
           <div className="text-lg sm:text-xl font-serif font-black text-agora-sage mt-1.5 truncate">
             {formatCurrency(totalValuationCents, settings.currency_symbol)}
           </div>
-          <span className="text-[10px] text-agora-ink-muted">Retail total</span>
+          <span className="text-[10px] text-agora-ink-muted font-medium">Retail total</span>
         </div>
       </div>
 
-      {/* Filter & Search Toolbar */}
-      <div className="ledger-card p-3 sm:p-4 space-y-3 shadow-sm">
-        <div className="flex flex-col sm:flex-row items-center gap-2.5">
-          <div className="relative flex-1 w-full">
-            <Search className="w-4 h-4 text-agora-ink-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search products..."
-              className="w-full bg-agora-bg border border-agora-border rounded-xl py-2 pl-9 pr-4 text-xs text-agora-ink placeholder:text-agora-ink-muted/80 focus:outline-none focus:border-agora-terracotta"
-            />
-          </div>
-
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <button
-              onClick={() => {
-                setFilterLowStockOnly(!filterLowStockOnly);
-                setFilterExpiringOnly(false);
-              }}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-all ${
-                filterLowStockOnly
-                  ? 'bg-agora-terracotta/15 border-agora-terracotta text-agora-terracotta'
-                  : 'bg-agora-card border-agora-border text-agora-ink-muted hover:text-agora-ink'
-              }`}
-            >
-              <AlertTriangle className="w-3.5 h-3.5" />
-              Low Stock ({lowStockCount})
-            </button>
-
-            <button
-              onClick={() => {
-                setFilterExpiringOnly(!filterExpiringOnly);
-                setFilterLowStockOnly(false);
-              }}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-all ${
-                filterExpiringOnly
-                  ? 'bg-agora-brick-light border-agora-brick-border text-agora-brick'
-                  : 'bg-agora-card border-agora-border text-agora-ink-muted hover:text-agora-ink'
-              }`}
-            >
-              <ShieldAlert className="w-3.5 h-3.5 text-agora-brick" />
-              Expiring ({expiringCount})
-            </button>
-          </div>
+      {/* Toolbar: Search + FilterSheet */}
+      <div className="ledger-card p-3 sm:p-4 shadow-sm flex items-center gap-2.5">
+        <div className="relative flex-1">
+          <Search className="w-4 h-4 text-agora-ink-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search products, category, batch..."
+            className="w-full bg-agora-bg border border-agora-border rounded-xl py-2 pl-9 pr-4 text-xs text-agora-ink placeholder:text-agora-ink-muted/80 focus:outline-none focus:border-agora-terracotta"
+          />
         </div>
 
-        {/* Categories */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-3 py-1 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-                selectedCategory === cat
-                  ? 'bg-agora-terracotta text-agora-card'
-                  : 'bg-agora-card border border-agora-border text-agora-ink-muted hover:text-agora-ink'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
+        <FilterSheet
+          activeCount={activeFilterCount}
+          title="Filter Product Catalog"
+          onReset={() => {
+            setSelectedCategory('ALL');
+            setFilterLowStockOnly(false);
+            setFilterExpiringOnly(false);
+          }}
+        >
+          {/* Categories Filter */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-agora-ink-muted">
+              Category
+            </label>
+            <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition-all text-left truncate ${
+                    selectedCategory === cat
+                      ? 'bg-agora-terracotta/15 border-agora-terracotta text-agora-terracotta shadow-sm'
+                      : 'bg-agora-bg border-agora-border text-agora-ink-muted hover:text-agora-ink'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Quick Toggles */}
+          <div className="space-y-2 pt-2 border-t border-agora-border">
+            <label className="text-xs font-bold uppercase tracking-wider text-agora-ink-muted">
+              Stock Alerts
+            </label>
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterLowStockOnly(!filterLowStockOnly);
+                  if (!filterLowStockOnly) setFilterExpiringOnly(false);
+                }}
+                className={`w-full flex items-center justify-between p-3 rounded-xl border text-xs font-bold transition-all ${
+                  filterLowStockOnly
+                    ? 'bg-agora-terracotta/15 border-agora-terracotta text-agora-terracotta'
+                    : 'bg-agora-bg border-agora-border text-agora-ink-muted hover:text-agora-ink'
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-agora-terracotta" />
+                  Show Low Stock Items Only
+                </span>
+                <span>({lowStockCount})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterExpiringOnly(!filterExpiringOnly);
+                  if (!filterExpiringOnly) setFilterLowStockOnly(false);
+                }}
+                className={`w-full flex items-center justify-between p-3 rounded-xl border text-xs font-bold transition-all ${
+                  filterExpiringOnly
+                    ? 'bg-agora-brick-light border-agora-brick-border text-agora-brick'
+                    : 'bg-agora-bg border-agora-border text-agora-ink-muted hover:text-agora-ink'
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <ShieldAlert className="w-4 h-4 text-agora-brick" />
+                  Show Expiring Items Only
+                </span>
+                <span>({expiringCount})</span>
+              </button>
+            </div>
+          </div>
+        </FilterSheet>
       </div>
 
-      {/* Table */}
-      <div className="ledger-card overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[700px] text-left text-xs">
-            <thead className="bg-agora-bg/80 border-b border-agora-border text-agora-ink-muted uppercase tracking-wider font-bold">
-              <tr>
-                <th className="p-3 sm:p-4">Product</th>
-                <th className="p-3 sm:p-4">Category</th>
-                <th className="p-3 sm:p-4">Price</th>
-                <th className="p-3 sm:p-4">Stock</th>
-                <th className="p-3 sm:p-4">Details</th>
-                <th className="p-3 sm:p-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-agora-border">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={6} className="p-8 text-center text-agora-ink-muted">
-                    Loading products...
-                  </td>
-                </tr>
-              ) : filteredProducts.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="p-8 text-center text-agora-ink-muted">
-                    No products found.
-                  </td>
-                </tr>
-              ) : (
-                filteredProducts.map((p) => {
-                  const isOut = p.stock_quantity <= 0;
-                  const isLow = !isOut && p.stock_quantity <= p.low_stock_threshold;
-                  const expDate = p.attributes?.expiry_date ? new Date(p.attributes.expiry_date as string) : null;
-                  const isExpiring = expDate ? expDate.getTime() <= expiryCutoff : false;
+      {/* Wallet-App Category Grouped List Row View */}
+      <div className="space-y-4">
+        {isLoading ? (
+          <ListSkeleton count={6} />
+        ) : filteredProducts.length === 0 ? (
+          <div className="ledger-card p-8 text-center text-xs text-agora-ink-muted">
+            No products found matching filters.
+          </div>
+        ) : (
+          groupedProducts.map((group) => (
+            <div key={group.category} className="space-y-1.5">
+              {/* Sticky Category Group Header */}
+              <div className="sticky top-[56px] sm:top-[65px] z-10 bg-agora-bg/95 backdrop-blur-sm py-1.5 px-2 text-[11px] font-bold uppercase tracking-wider text-agora-brass border-b border-agora-border/60 flex items-center justify-between">
+                <span>{group.category}</span>
+                <span className="text-[10px] text-agora-ink-muted">({group.items.length} items)</span>
+              </div>
 
-                  return (
-                    <tr key={p.id} className="ledger-row">
-                      <td className="p-3 sm:p-4 font-bold text-agora-ink">
-                        <div className="flex items-center gap-2.5">
-                          <ProductAvatar name={p.name} imageUrl={p.image_url} size="sm" />
-                          <div>
-                            <span className="block font-bold text-sm text-agora-ink">{p.name}</span>
-                            {p.cost_price && (
-                              <span className="text-[10px] text-agora-ink-muted">
-                                Cost: {formatCurrency(p.cost_price, settings.currency_symbol)}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </td>
+              {/* Product Rows */}
+              {group.items.map((p) => {
+                const isOut = p.stock_quantity <= 0;
+                const isLow = !isOut && p.stock_quantity <= p.low_stock_threshold;
+                const expDate = p.attributes?.expiry_date ? new Date(p.attributes.expiry_date as string) : null;
+                const isExpiring = expDate ? expDate.getTime() <= expiryCutoff : false;
+                const suggestedQty = restockSuggestions[p.id];
 
-                      <td className="p-3 sm:p-4">
-                        <span className="px-2 py-0.5 rounded-lg bg-agora-bg border border-agora-border text-agora-ink font-semibold text-[11px]">
-                          {p.category}
-                        </span>
-                      </td>
+                const swipeActions: SwipeAction[] = [
+                  {
+                    id: 'restock',
+                    label: 'Restock',
+                    icon: PlusCircle,
+                    bgColorClass: 'bg-agora-terracotta text-agora-card',
+                    onClick: () => handleOpenRestock(p),
+                  },
+                  {
+                    id: 'edit',
+                    label: 'Edit',
+                    icon: Edit3,
+                    bgColorClass: 'bg-agora-brass text-agora-card',
+                    onClick: () => handleOpenEdit(p),
+                  },
+                ];
 
-                      <td className="p-3 sm:p-4 font-serif font-bold text-agora-terracotta text-sm">
-                        {formatCurrency(p.price, settings.currency_symbol)}
-                      </td>
-
-                      <td className="p-3 sm:p-4">
-                        <div className="flex items-center gap-1">
-                          <span className="font-serif font-extrabold text-sm text-agora-ink">
-                            {p.stock_quantity}
+                return (
+                  <ListRow
+                    key={p.id}
+                    onClick={() => handleOpenEdit(p)}
+                    swipeActions={swipeActions}
+                    icon={<ProductAvatar name={p.name} imageUrl={p.image_url} size="md" />}
+                    title={p.name}
+                    subtitle={
+                      <div className="flex items-center gap-2 text-[11px]">
+                        <span>Cost: {p.cost_price ? formatCurrency(p.cost_price, settings.currency_symbol) : '-'}</span>
+                        {p.unit_type && <span>• {p.unit_type}</span>}
+                        {p.attributes?.batch_no && <span>• Batch {String(p.attributes.batch_no)}</span>}
+                      </div>
+                    }
+                    value={formatCurrency(p.price, settings.currency_symbol)}
+                    badge={
+                      <div className="flex flex-col items-end space-y-0.5">
+                        {isExpiring ? (
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-agora-brick-light border border-agora-brick-border text-agora-brick inline-flex items-center gap-1">
+                            <ShieldAlert className="w-3 h-3" /> Expiring
                           </span>
-                          <span className="text-[10px] font-semibold text-agora-ink-muted uppercase">
-                            {p.unit_type || 'pcs'}
+                        ) : isOut ? (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-agora-brick-light border border-agora-brick-border text-agora-brick">
+                            Out of Stock
                           </span>
-                        </div>
-                      </td>
-
-                      <td className="p-3 sm:p-4 space-y-1">
-                        {expDate && (
-                          <span
-                            className={`px-2 py-0.5 rounded-md text-[10px] font-bold inline-flex items-center gap-1 block w-max ${
-                              isExpiring
-                                ? 'bg-agora-brick-light border border-agora-brick-border text-agora-brick'
-                                : 'bg-agora-bg border border-agora-border text-agora-ink-muted'
-                            }`}
-                          >
-                            <Calendar className="w-3 h-3" /> Exp: {expDate.toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
+                        ) : isLow ? (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-agora-terracotta-light text-agora-terracotta border border-agora-terracotta-border">
+                            Low ({p.stock_quantity})
+                          </span>
+                        ) : (
+                          <span className="text-xs font-semibold text-agora-ink">
+                            Stock: <strong className="font-serif font-bold text-agora-ink">{p.stock_quantity}</strong>
                           </span>
                         )}
 
-                        {(isLow || isOut) && (
-                          <div className="space-y-1">
-                            <span className="px-2 py-0.5 rounded-full bg-agora-terracotta-light text-agora-terracotta border border-agora-terracotta-border text-[10px] font-bold inline-block">
-                              {isOut ? 'Out of Stock' : `Low Stock (≤${p.low_stock_threshold})`}
-                            </span>
-                            <span className="text-[10px] font-bold text-agora-terracotta block">
-                              Suggested reorder: +{restockSuggestions[p.id] || p.low_stock_threshold}
-                            </span>
-                          </div>
+                        {(isLow || isOut) && suggestedQty && (
+                          <span className="text-[9px] font-bold text-agora-terracotta">
+                            Reorder: +{suggestedQty}
+                          </span>
                         )}
-                      </td>
-
-                      <td className="p-3 sm:p-4 text-right space-x-1">
-                        <button
-                          onClick={() => handleOpenRestock(p)}
-                          className="px-2.5 py-1 bg-agora-terracotta/10 hover:bg-agora-terracotta/20 text-agora-terracotta font-bold rounded-lg border border-agora-terracotta/30 transition-all text-xs inline-flex items-center gap-1"
-                        >
-                          <PlusCircle className="w-3.5 h-3.5" /> Restock
-                        </button>
-                        <button
-                          onClick={() => handleOpenEdit(p)}
-                          className="p-1.5 text-agora-ink-muted hover:text-agora-ink hover:bg-agora-bg rounded-lg transition-all"
-                          title="Edit"
-                        >
-                          <Edit3 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteProduct(p.id, p.name)}
-                          className="p-1.5 text-agora-brick/70 hover:text-agora-brick hover:bg-agora-brick-light rounded-lg transition-all"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                      </div>
+                    }
+                  />
+                );
+              })}
+            </div>
+          ))
+        )}
       </div>
 
       <AddEditProductModal

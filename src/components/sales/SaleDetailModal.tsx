@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Sale, SaleItem } from '@/types';
 import { formatCurrency } from '@/utils/currency';
 import { formatDate } from '@/utils/formatters';
+import BottomSheet from '@/components/common/BottomSheet';
 import { X, Receipt, RotateCcw, AlertTriangle, CheckCircle, Ban, RefreshCw, Tag } from 'lucide-react';
 
 interface SaleDetailModalProps {
@@ -69,27 +70,19 @@ export default function SaleDetailModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-agora-card border border-agora-border rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        <div className="px-6 py-4 border-b border-agora-border flex items-center justify-between bg-agora-bg/50">
-          <div className="flex items-center gap-2">
-            <Receipt className="w-5 h-5 text-agora-terracotta" />
-            <div>
-              <h3 className="font-serif font-bold text-agora-ink text-lg leading-tight">
-                Sale Details {sale.sale_number}
-              </h3>
-              <span className="text-xs text-agora-ink/60">{formatDate(sale.timestamp)}</span>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-agora-ink/60 hover:text-agora-ink p-1.5 rounded-xl hover:bg-agora-bg transition-all"
-          >
-            <X className="w-5 h-5" />
-          </button>
+    <BottomSheet
+      isOpen={isOpen}
+      onClose={onClose}
+      title={
+        <div className="flex items-center gap-2">
+          <Receipt className="w-5 h-5 text-agora-terracotta shrink-0" />
+          <span className="font-serif font-bold text-agora-ink text-base sm:text-lg">
+            Sale {sale.sale_number}
+          </span>
         </div>
-
-        <div className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+      }
+      subtitle={formatDate(sale.timestamp)}
+    >
           {/* Status Badge Banner */}
           {(() => {
             const isPartiallyRefunded = sale.status === 'PARTIALLY_REFUNDED';
@@ -272,9 +265,7 @@ export default function SaleDetailModal({
               </button>
             )}
           </div>
-        </div>
-      </div>
-    </div>
+    </BottomSheet>
   );
 }
 
