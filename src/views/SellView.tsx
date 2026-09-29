@@ -16,8 +16,7 @@ import {
   ChevronUp, 
   ChevronDown, 
   X,
-  ArrowRight,
-  Star
+  ArrowRight
 } from 'lucide-react';
 
 export default function SellView() {
@@ -73,10 +72,6 @@ export default function SellView() {
   useEffect(() => {
     loadData();
   }, []);
-
-  const favorites = useMemo(() => {
-    return api.getTopFavorites(products, sales);
-  }, [products, sales]);
 
   const categories = useMemo(() => {
     const set = new Set<string>();
@@ -225,45 +220,6 @@ export default function SellView() {
             <button onClick={() => setWarningMessage(null)} className="text-agora-brick hover:text-agora-ink font-bold ml-2">
               ✕
             </button>
-          </div>
-        )}
-
-        {/* Top 6 Favorites Quick Access Row */}
-        {favorites.length > 0 && (
-          <div className="space-y-1.5 shrink-0 bg-agora-card/60 p-2.5 rounded-2xl border border-agora-border/80 shadow-sm">
-            <div className="flex items-center justify-between text-xs font-bold text-agora-ink-muted px-1">
-              <span className="flex items-center gap-1.5 uppercase tracking-wider text-[11px] text-agora-ink">
-                <Star className="w-3.5 h-3.5 text-agora-terracotta fill-agora-terracotta shrink-0" /> Quick Access Favorites
-              </span>
-              <span className="text-[10px] text-agora-brass font-bold">1-Tap Add</span>
-            </div>
-            <div className="flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-none">
-              {favorites.map((fav) => {
-                const inCart = cart.find((i) => i.product.id === fav.id);
-                return (
-                  <button
-                    key={fav.id}
-                    onClick={() => handleAddToCart(fav)}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-agora-card border border-agora-border hover:border-agora-terracotta shadow-sm shrink-0 transition-all active:scale-95 group"
-                  >
-                    <ProductAvatar name={fav.name} imageUrl={fav.image_url} size="sm" />
-                    <div className="text-left min-w-0">
-                      <span className="block font-bold text-xs text-agora-ink truncate max-w-[90px] group-hover:text-agora-terracotta">
-                        {fav.name}
-                      </span>
-                      <span className="text-[11px] font-serif font-black text-agora-terracotta">
-                        {formatCurrency(fav.price, settings.currency_symbol)}
-                      </span>
-                    </div>
-                    {inCart && inCart.quantity > 0 && (
-                      <span className="bg-agora-terracotta text-agora-card text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shrink-0">
-                        {inCart.quantity}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
           </div>
         )}
 
