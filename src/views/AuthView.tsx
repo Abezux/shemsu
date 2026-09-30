@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { KeyRound, Mail, ArrowRight, ShieldCheck, CheckCircle2, AlertCircle } from 'lucide-react';
+import { KeyRound, Mail, ArrowRight, ShieldCheck, CheckCircle2, AlertCircle, ArrowLeft } from 'lucide-react';
 import AgoraLogo from '@/components/navigation/AgoraLogo';
 
-export default function AuthView() {
+interface AuthViewProps {
+  initialMode?: 'LOGIN' | 'SIGNUP' | 'FORGOT';
+  onBackToLanding?: () => void;
+}
+
+export default function AuthView({ initialMode = 'LOGIN', onBackToLanding }: AuthViewProps) {
   const { signIn, signUp, resetPassword } = useAuth();
-  const [mode, setMode] = useState<'LOGIN' | 'SIGNUP' | 'FORGOT'>('LOGIN');
+  const [mode, setMode] = useState<'LOGIN' | 'SIGNUP' | 'FORGOT'>(initialMode);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -54,9 +59,19 @@ export default function AuthView() {
   return (
     <div className="min-h-screen bg-agora-bg text-agora-ink flex flex-col justify-center items-center p-4">
       {/* Container */}
-      <div className="w-full max-w-md ledger-card p-6 sm:p-8 shadow-md space-y-6 animate-in fade-in zoom-in-95 duration-200">
+      <div className="w-full max-w-md ledger-card p-6 sm:p-8 shadow-md space-y-6 animate-in fade-in zoom-in-95 duration-200 relative">
+        {onBackToLanding && (
+          <button
+            onClick={onBackToLanding}
+            className="absolute left-6 top-6 text-xs text-agora-ink-muted hover:text-agora-ink flex items-center gap-1 font-semibold transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Landing</span>
+          </button>
+        )}
+
         {/* Header Logo */}
-        <div className="text-center space-y-2 flex flex-col items-center">
+        <div className="text-center space-y-2 flex flex-col items-center pt-2">
           <AgoraLogo size="lg" />
           <p className="text-xs text-agora-ink-muted font-medium mt-1">
             Digital Ledger for Merchants

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
+import LandingView from '@/views/LandingView';
 import AuthView from '@/views/AuthView';
 import OnboardingView from '@/views/OnboardingView';
 import Navbar, { Sidebar } from '@/components/navigation/Navbar';
@@ -13,13 +14,20 @@ import { Loader2 } from 'lucide-react';
 function AppContent() {
   const { user, store, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('sell');
+  const [authViewMode, setAuthViewMode] = useState<'LOGIN' | 'SIGNUP' | null>(null);
 
   useEffect(() => {
     const handleHash = () => {
       const rawHash = window.location.hash.replace('#', '');
       const baseTab = rawHash.split('?')[0];
-      if (['sell', 'inventory', 'sales', 'audit', 'analytics'].includes(baseTab)) {
+
+      if (baseTab === 'auth' || baseTab === 'login') {
+        setAuthViewMode('LOGIN');
+      } else if (baseTab === 'signup') {
+        setAuthViewMode('SIGNUP');
+      } else if (['sell', 'inventory', 'sales', 'audit', 'analytics', 'landing'].includes(baseTab)) {
         setActiveTab(baseTab);
+        if (baseTab !== 'landing') setAuthViewMode(null);
       }
     };
 
@@ -46,7 +54,25 @@ function AppContent() {
   }
 
   if (!user) {
-    return <AuthView />;
+    if (authViewMode) {
+      return (
+        <AuthView
+          initialMode={authViewMode}
+          onBackToLanding={() => {
+            setAuthViewMode(null);
+            window.location.hash = '';
+          }}
+        />
+      );
+    }
+    return (
+      <LandingView
+        onOpenAuth={(mode = 'LOGIN') => {
+          setAuthViewMode(mode);
+          window.location.hash = mode.toLowerCase();
+        }}
+      />
+    );
   }
 
   if (!store) {
@@ -59,6 +85,11 @@ function AppContent() {
       <div className="flex-1 flex min-h-0 w-full overflow-hidden">
         <Sidebar activeTab={activeTab} onNavigate={navigateTo} />
         <main className="flex-1 min-w-0 p-3 sm:p-4 md:p-6 overflow-y-auto pb-20 lg:pb-6 h-full">
+          {activeTab === 'landing' && (
+            <LandingView
+              onOpenAuth={() => navigateTo('sell')}
+            />
+          )}
           {activeTab === 'sell' && <SellPage />}
           {activeTab === 'inventory' && <InventoryPage />}
           {activeTab === 'sales' && <SalesHistoryPage />}
