@@ -71,9 +71,10 @@ Tokens live in `tailwind.config.ts` under `agora.*` (bg, card, border, ink, terr
 6. `LandingView.tsx` is 685 lines in one file; the large views (Sell, Inventory, Analytics, Sales) are 450–510 lines each and load their own data inline.
 7. `Navbar.tsx` calls `api.seedDemo()` (data logic inside a navigation component).
 8. Repo hygiene: `tsconfig.tsbuildinfo` is committed though ignored; `.babelrc` references `next/babel` but this is a Vite project; no README, tests, linter, or formatter.
-9. Naming is inconsistent: package `agora-pos`, repo `shemsu`, localStorage keys `shemsu_*`, UI brand "Agora".
+9. Naming: standardized product name to "Agora", package to "agora", and localStorage keys to "agora_*" (with legacy key fallback).
 10. `index.html`: `user-scalable=no` blocks pinch-zoom (accessibility); canonical/OG URLs and image are placeholders.
 11. Minor: `is_store_owner()` is `SECURITY DEFINER` without a fixed `search_path`.
 
 ## Decisions log
 - 2026-10-06: A1 repo hygiene — untracked tsconfig.tsbuildinfo from git, removed unused .babelrc, and added project README.md.
+- 2026-10-06: A2 naming — standardized product name to "Agora", package name to "agora", and local storage keys to "agora_*" (with automatic fallback migration for legacy shemsu_* keys).

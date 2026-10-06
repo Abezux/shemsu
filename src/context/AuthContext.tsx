@@ -26,8 +26,10 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const LOCAL_MOCK_USER_KEY = 'shemsu_mock_user';
-const LOCAL_MOCK_STORE_KEY = 'shemsu_mock_store';
+const LOCAL_MOCK_USER_KEY = 'agora_mock_user';
+const LOCAL_MOCK_STORE_KEY = 'agora_mock_store';
+const LEGACY_MOCK_USER_KEY = 'shemsu_mock_user';
+const LEGACY_MOCK_STORE_KEY = 'shemsu_mock_store';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -67,8 +69,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setStore(null);
       }
     } else {
-      // Local Mock Mode
-      const localStoreStr = localStorage.getItem(`${LOCAL_MOCK_STORE_KEY}_${userId}`);
+      // Local Mock Mode (supports fallback check from legacy keys)
+      const localStoreStr =
+        localStorage.getItem(`${LOCAL_MOCK_STORE_KEY}_${userId}`) ||
+        localStorage.getItem(`${LEGACY_MOCK_STORE_KEY}_${userId}`);
       if (localStoreStr) {
         setStore(JSON.parse(localStoreStr));
       } else {
@@ -112,8 +116,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // Local Mock Auth Loader (Development Mode Only)
-      const localUserStr = localStorage.getItem(LOCAL_MOCK_USER_KEY);
+      // Local Mock Auth Loader (Development Mode Only with legacy key migration)
+      const localUserStr = localStorage.getItem(LOCAL_MOCK_USER_KEY) || localStorage.getItem(LEGACY_MOCK_USER_KEY);
       if (localUserStr) {
         const mockUser = JSON.parse(localUserStr);
         setUser(mockUser);

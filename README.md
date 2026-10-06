@@ -1,6 +1,6 @@
-# Agora POS (`shemsu`)
+# Agora (`shemsu`)
 
-Agora POS is a fast, installable Progressive Web App (PWA) designed for small shop sales and inventory tracking. It provides modern point-of-sale functionality, inventory control, sales history, stock movement auditing, and business analytics with dual database/offline fallback capabilities.
+Agora is a fast, installable Progressive Web App (PWA) designed for small shop sales and inventory tracking. It provides modern point-of-sale functionality, inventory control, sales history, stock movement auditing, and business analytics with dual database/offline fallback capabilities.
 
 ---
 

@@ -15,14 +15,23 @@ import { INITIAL_SAMPLE_PRODUCTS } from '@/lib/seed';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { getSaleNetRevenue } from '@/utils/revenue';
 
-const PRODUCTS_KEY = 'shemsu_products_v1';
-const SALES_KEY = 'shemsu_sales_v1';
-const MOVEMENTS_KEY = 'shemsu_movements_v1';
-const SETTINGS_KEY = 'shemsu_settings_v1';
+const PRODUCTS_KEY = 'agora_products_v1';
+const SALES_KEY = 'agora_sales_v1';
+const MOVEMENTS_KEY = 'agora_movements_v1';
+const SETTINGS_KEY = 'agora_settings_v1';
+const REFUNDS_KEY = 'agora_refunds_v1';
+const CLOSURES_KEY = 'agora_closures_v1';
 
 function getLocal<T>(key: string, defaultVal: T): T {
   if (typeof window === 'undefined') return defaultVal;
-  const str = localStorage.getItem(key);
+  let str = localStorage.getItem(key);
+  if (!str && key.startsWith('agora_')) {
+    const legacyKey = key.replace(/^agora_/, 'shemsu_');
+    str = localStorage.getItem(legacyKey);
+    if (str) {
+      localStorage.setItem(key, str);
+    }
+  }
   if (!str) return defaultVal;
   try {
     return JSON.parse(str);
@@ -513,7 +522,7 @@ export const api = {
     const products = getLocal<Product[]>(PRODUCTS_KEY, []);
     const sales = getLocal<Sale[]>(SALES_KEY, []);
     const movements = getLocal<StockMovement[]>(MOVEMENTS_KEY, []);
-    const refunds = getLocal<any[]>('shemsu_refunds_v1', []);
+    const refunds = getLocal<any[]>(REFUNDS_KEY, []);
     const now = new Date().toISOString();
 
     const sale = sales.find((s) => s.id === saleId);
@@ -572,7 +581,7 @@ export const api = {
     setLocal(PRODUCTS_KEY, products);
     setLocal(SALES_KEY, sales);
     setLocal(MOVEMENTS_KEY, movements);
-    setLocal('shemsu_refunds_v1', refunds);
+    setLocal(REFUNDS_KEY, refunds);
 
     return sale;
   },
@@ -965,7 +974,7 @@ export const api = {
   getRegisterClosures: async (): Promise<RegisterClosure[]> => {
     if (isSupabaseConfigured()) {
       const storeId = await getActiveStoreId();
-      if (!storeId) return getLocal<RegisterClosure[]>('shemsu_closures_v1', []);
+      if (!storeId) return getLocal<RegisterClosure[]>(CLOSURES_KEY, []);
 
       const { data, error } = await supabase
         .from('register_closures')
@@ -975,11 +984,11 @@ export const api = {
 
       if (error) {
         console.error('Error fetching closures:', error);
-        return getLocal<RegisterClosure[]>('shemsu_closures_v1', []);
+        return getLocal<RegisterClosure[]>(CLOSURES_KEY, []);
       }
       return (data || []) as RegisterClosure[];
     }
-    return getLocal<RegisterClosure[]>('shemsu_closures_v1', []);
+    return getLocal<RegisterClosure[]>(CLOSURES_KEY, []);
   },
 
   getExpectedCash: async (): Promise<{
@@ -1074,7 +1083,7 @@ export const api = {
       }
     }
 
-    const closures = getLocal<RegisterClosure[]>('shemsu_closures_v1', []);
+    const closures = getLocal<RegisterClosure[]>(CLOSURES_KEY, []);
     const newClosure: RegisterClosure = {
       id: `closure-${Date.now()}`,
       period_start: periodStart,
@@ -1087,7 +1096,7 @@ export const api = {
     };
 
     closures.unshift(newClosure);
-    setLocal('shemsu_closures_v1', closures);
+    setLocal(CLOSURES_KEY, closures);
     return newClosure;
   },
 

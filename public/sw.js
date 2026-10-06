@@ -1,5 +1,5 @@
-// Agora POS Service Worker
-const CACHE_NAME = 'agora-pos-v__BUILD_TIMESTAMP__';
+// Agora Service Worker
+const CACHE_NAME = 'agora-v__BUILD_TIMESTAMP__';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

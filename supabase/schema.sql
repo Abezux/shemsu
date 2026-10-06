@@ -1,5 +1,5 @@
 -- =============================================================
--- SHEMSU POS - PHASE 3 SUPABASE POSTGRES SCHEMA & RLS POLICIES
+-- AGORA - SUPABASE POSTGRES SCHEMA & RLS POLICIES
 -- =============================================================
 
 -- 1. Enable UUID Extension

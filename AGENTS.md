@@ -3,7 +3,7 @@
 Read this file fully before doing anything. Then read `docs/ARCHITECTURE.md` (how the code is organized) and `docs/ROADMAP.md` (what we're doing now).
 
 ## What this project is
-Agora POS (repo name: shemsu) — a sales and inventory tracker for small shops.
+Agora (repo name: shemsu) — a sales and inventory tracker for small shops.
 Stack: React 18, TypeScript (strict), Vite 5, Tailwind 3, Supabase (Postgres + Auth + RLS), Recharts, lucide-react. Installable as a PWA.
 
 ## Commands
