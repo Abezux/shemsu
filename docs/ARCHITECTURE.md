@@ -64,8 +64,8 @@ Tokens live in `tailwind.config.ts` under `agora.*` (bg, card, border, ink, terr
 
 ## Known issues (cleanup candidates, roughly by priority)
 1. `services/api.ts` is one 1,100+ line file mixing Supabase queries, localStorage fallbacks, analytics math, and seeding.
-2. On Supabase errors some methods silently return localStorage data, which can hide real failures and show wrong data.
-3. Dual real/mock mode adds about 17 `isSupabaseConfigured()` branches in `api.ts` plus more in `AuthContext`. Decide: keep as a dev-only mode or remove.
+2. (Resolved in A3) Removed silent localStorage fallbacks on Supabase errors; queries now throw explicit errors.
+3. (Resolved in A3) Retained Local Mock Mode strictly as a dev-only fallback when `.env` is unconfigured.
 4. About 17 uses of `any`; about 18 `alert()` / `confirm()` calls.
 5. Hand-rolled hash navigation in `App.tsx`; a `landing` tab also exists inside the logged-in app. Production bundle is one 962 kB JS file (no code splitting).
 6. `LandingView.tsx` is 685 lines in one file; the large views (Sell, Inventory, Analytics, Sales) are 450–510 lines each and load their own data inline.
@@ -78,3 +78,4 @@ Tokens live in `tailwind.config.ts` under `agora.*` (bg, card, border, ink, terr
 ## Decisions log
 - 2026-10-06: A1 repo hygiene — untracked tsconfig.tsbuildinfo from git, removed unused .babelrc, and added project README.md.
 - 2026-10-06: A2 naming — standardized product name to "Agora", package name to "agora", and local storage keys to "agora_*" (with automatic fallback migration for legacy shemsu_* keys).
+- 2026-10-07: A3 mock mode & error handling — retained Local Mock Mode strictly for development without Supabase keys, and removed silent localStorage fallbacks when Supabase is configured.

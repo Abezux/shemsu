@@ -64,7 +64,7 @@ export const api = {
   getProducts: async (): Promise<Product[]> => {
     if (isSupabaseConfigured()) {
       const storeId = await getActiveStoreId();
-      if (!storeId) return getLocal<Product[]>(PRODUCTS_KEY, []);
+      if (!storeId) return [];
 
       const { data, error } = await supabase
         .from('products')
@@ -73,8 +73,7 @@ export const api = {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Supabase error fetching products:', error);
-        return getLocal<Product[]>(PRODUCTS_KEY, []);
+        throw new Error(`Failed to fetch products: ${error.message}`);
       }
       return (data || []) as Product[];
     }
@@ -251,10 +250,9 @@ export const api = {
           .single();
 
         if (error) {
-          console.error('Error toggling favorite:', error);
-        } else {
-          return data as Product;
+          throw new Error(`Failed to update favorite status: ${error.message}`);
         }
+        return data as Product;
       }
     }
 
@@ -273,7 +271,10 @@ export const api = {
       const storeId = await getActiveStoreId();
       if (storeId) {
         const { error } = await supabase.from('products').delete().eq('id', id).eq('store_id', storeId);
-        return !error;
+        if (error) {
+          throw new Error(`Failed to delete product: ${error.message}`);
+        }
+        return true;
       }
     }
 
@@ -351,7 +352,7 @@ export const api = {
   getSales: async (): Promise<Sale[]> => {
     if (isSupabaseConfigured()) {
       const storeId = await getActiveStoreId();
-      if (!storeId) return getLocal<Sale[]>(SALES_KEY, []);
+      if (!storeId) return [];
 
       const { data: salesData, error } = await supabase
         .from('sales')
@@ -360,8 +361,7 @@ export const api = {
         .order('timestamp', { ascending: false });
 
       if (error) {
-        console.error('Error fetching sales from Supabase:', error);
-        return getLocal<Sale[]>(SALES_KEY, []);
+        throw new Error(`Failed to fetch sales: ${error.message}`);
       }
 
       return (salesData || []).map((s) => ({
@@ -650,7 +650,7 @@ export const api = {
   getStockMovements: async (): Promise<StockMovement[]> => {
     if (isSupabaseConfigured()) {
       const storeId = await getActiveStoreId();
-      if (!storeId) return getLocal<StockMovement[]>(MOVEMENTS_KEY, []);
+      if (!storeId) return [];
 
       const { data, error } = await supabase
         .from('stock_movements')
@@ -659,8 +659,7 @@ export const api = {
         .order('timestamp', { ascending: false });
 
       if (error) {
-        console.error('Error fetching stock movements:', error);
-        return getLocal<StockMovement[]>(MOVEMENTS_KEY, []);
+        throw new Error(`Failed to fetch stock movements: ${error.message}`);
       }
       return (data || []) as StockMovement[];
     }
@@ -678,7 +677,10 @@ export const api = {
           .eq('id', storeId)
           .single();
 
-        if (!error && data) {
+        if (error) {
+          throw new Error(`Failed to fetch store settings: ${error.message}`);
+        }
+        if (data) {
           return {
             store_name: data.name,
             currency_symbol: data.currency_symbol,
@@ -720,7 +722,10 @@ export const api = {
           .select('*')
           .single();
 
-        if (!error && data) {
+        if (error) {
+          throw new Error(`Failed to update store settings: ${error.message}`);
+        }
+        if (data) {
           return {
             store_name: data.name,
             currency_symbol: data.currency_symbol,
@@ -974,7 +979,7 @@ export const api = {
   getRegisterClosures: async (): Promise<RegisterClosure[]> => {
     if (isSupabaseConfigured()) {
       const storeId = await getActiveStoreId();
-      if (!storeId) return getLocal<RegisterClosure[]>(CLOSURES_KEY, []);
+      if (!storeId) return [];
 
       const { data, error } = await supabase
         .from('register_closures')
@@ -983,8 +988,7 @@ export const api = {
         .order('closed_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching closures:', error);
-        return getLocal<RegisterClosure[]>(CLOSURES_KEY, []);
+        throw new Error(`Failed to fetch register closures: ${error.message}`);
       }
       return (data || []) as RegisterClosure[];
     }
