@@ -57,7 +57,7 @@ Tables: `stores`, `custom_attribute_definitions`, `products`, `sales`, `sale_pay
 - `api.ts` also contains pure analytics helpers (`getMetricTrends`, `getRevenueTrendData`, `getHourlySalesData`, `getStockHealthData`, `getSmartRestockSuggestions`, `getTopFavorites`) and `seedDemo`.
 
 ## Local mock mode
-If `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` are missing, `AuthContext` and `api.ts` fall back to `localStorage`. This is blocked in production mode. Some `api.ts` methods also fall back to localStorage when a Supabase call fails (see Known issues).
+If `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` are missing, `AuthContext` and `api.ts` fall back to `localStorage` for development only. This is blocked in production mode. When Supabase is configured, queries throw explicit errors on failure rather than falling back silently.
 
 ## Design system
 Tokens live in `tailwind.config.ts` under `agora.*` (bg, card, border, ink, terracotta, brass, sage, brick, gold). Fonts: Fraunces (serif headings), Inter (body). Shared look classes: `.ledger-card`, `.ledger-row`.
