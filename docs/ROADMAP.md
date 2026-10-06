@@ -4,10 +4,15 @@ Rule: one step at a time. Discuss → plan → approve → build → verify → 
 
 ## Current status (agents: keep this accurate after every step)
 - Last updated: 2026-10-07
-- Done: Phases 1–14 of original build; A1 (Repo hygiene); A2 (Naming standardized to "Agora"); A3 (Mock mode & error handling); A4 (Split services/api.ts by domain into products, sales, movements, settings, register, and analytics).
+- Done:
+  - Phases 1–14 (Initial core build)
+  - A1: Repo hygiene (removed committed `tsconfig.tsbuildinfo` & `.babelrc`, added `README.md`)
+  - A2: Naming standardized to "Agora" / `"agora"` across `package.json`, `manifest.json`, `sw.js`, and `localStorage` keys
+  - A3: Dev-only mock mode & explicit Supabase error handling (removed silent `localStorage` fallbacks)
+  - A4: Split `services/api.ts` into domain services (`common`, `products`, `sales`, `movements`, `settings`, `register`, `analytics`) with a unified `api` facade
 - In progress: nothing yet
-- Next: A5
-- Blockers / questions for the owner: none
+- Next: A5 (Replace `any` with real types & replace browser `alert()` / `confirm()` calls with UI modals)
+- Blockers / questions for the owner: None currently. Ready to begin Task A5 planning.
 
 ## Phase A — Clean foundation (do before new features)
 - [x] A1. Repo hygiene: remove `tsconfig.tsbuildinfo` from git, delete `.babelrc`, add `README.md` (setup, env vars, Supabase schema steps, commands)
