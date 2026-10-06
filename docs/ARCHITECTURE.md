@@ -31,7 +31,7 @@ src/
     reports/          RegisterClosureModal
     analytics/        DrilldownModal
     settings/         SettingsModal
-  services/api.ts     The ONE data layer: a single `api` object (about 1,100 lines)
+  services/           Data access layer (common, products, sales, movements, settings, register, analytics, api facade)
   lib/supabase.ts     Supabase client + isSupabaseConfigured()
   lib/seed.ts         Demo catalog products
   types/              index.ts (app types), supabase.ts (DB types)
@@ -63,7 +63,7 @@ If `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` are missing, `AuthContext` and
 Tokens live in `tailwind.config.ts` under `agora.*` (bg, card, border, ink, terracotta, brass, sage, brick, gold). Fonts: Fraunces (serif headings), Inter (body). Shared look classes: `.ledger-card`, `.ledger-row`.
 
 ## Known issues (cleanup candidates, roughly by priority)
-1. `services/api.ts` is one 1,100+ line file mixing Supabase queries, localStorage fallbacks, analytics math, and seeding.
+1. (Resolved in A4) Split `services/api.ts` into modular domain services (`products`, `sales`, `movements`, `settings`, `register`, `analytics`) re-exported via `api.ts` facade.
 2. (Resolved in A3) Removed silent localStorage fallbacks on Supabase errors; queries now throw explicit errors.
 3. (Resolved in A3) Retained Local Mock Mode strictly as a dev-only fallback when `.env` is unconfigured.
 4. About 17 uses of `any`; about 18 `alert()` / `confirm()` calls.
@@ -79,3 +79,4 @@ Tokens live in `tailwind.config.ts` under `agora.*` (bg, card, border, ink, terr
 - 2026-10-06: A1 repo hygiene — untracked tsconfig.tsbuildinfo from git, removed unused .babelrc, and added project README.md.
 - 2026-10-06: A2 naming — standardized product name to "Agora", package name to "agora", and local storage keys to "agora_*" (with automatic fallback migration for legacy shemsu_* keys).
 - 2026-10-07: A3 mock mode & error handling — retained Local Mock Mode strictly for development without Supabase keys, and removed silent localStorage fallbacks when Supabase is configured.
+- 2026-10-07: A4 domain split — modularized `src/services/` into domain-specific services with a unified `api` facade export.

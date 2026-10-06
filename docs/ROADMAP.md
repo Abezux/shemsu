@@ -4,16 +4,16 @@ Rule: one step at a time. Discuss → plan → approve → build → verify → 
 
 ## Current status (agents: keep this accurate after every step)
 - Last updated: 2026-10-07
-- Done: Phases 1–14 of original build; A1 (Repo hygiene); A2 (Naming standardized to "Agora"); A3 (Local mock mode kept dev-only; removed silent localStorage fallbacks on Supabase errors).
+- Done: Phases 1–14 of original build; A1 (Repo hygiene); A2 (Naming standardized to "Agora"); A3 (Mock mode & error handling); A4 (Split services/api.ts by domain into products, sales, movements, settings, register, and analytics).
 - In progress: nothing yet
-- Next: A4
+- Next: A5
 - Blockers / questions for the owner: none
 
 ## Phase A — Clean foundation (do before new features)
 - [x] A1. Repo hygiene: remove `tsconfig.tsbuildinfo` from git, delete `.babelrc`, add `README.md` (setup, env vars, Supabase schema steps, commands)
 - [x] A2. Decide the naming: standard product name "Agora" & package "agora"; update `package.json`, `manifest.json`, `index.html`, localStorage keys
 - [x] A3. Decide on local mock mode: keep as dev-only; removed silent localStorage fallbacks on Supabase errors (errors thrown explicitly to views)
-- [ ] A4. Split `services/api.ts` by domain (products, sales, settings, register, analytics helpers) with no behavior change; keep the build green after each split
+- [x] A4. Split `services/api.ts` by domain (products, sales, settings, register, analytics helpers) with no behavior change; keep the build green after each split
 - [ ] A5. Replace `any` with real types; replace `alert()` / `confirm()` with a modal or bottom sheet
 - [ ] A6. Move `seedDemo` out of `Navbar.tsx`
 - [ ] A7. Add ESLint + Prettier, then a small test setup (Vitest) covering `utils/revenue.ts` and `utils/currency.ts`
