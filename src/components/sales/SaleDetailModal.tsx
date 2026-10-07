@@ -32,6 +32,7 @@ export default function SaleDetailModal({
   const [refundQtyInput, setRefundQtyInput] = useState<string>('1');
   const [refundReasonInput, setRefundReasonInput] = useState<string>('');
   const [isSubmittingRefund, setIsSubmittingRefund] = useState<boolean>(false);
+  const [refundError, setRefundError] = useState<string | null>(null);
 
   if (!isOpen || !sale) return null;
 
@@ -42,15 +43,17 @@ export default function SaleDetailModal({
     setRefundingItemId(item.id);
     setRefundQtyInput(unrefunded.toString());
     setRefundReasonInput('');
+    setRefundError(null);
   };
 
   const handleConfirmRefund = async (item: SaleItem) => {
     if (!onProcessRefund) return;
+    setRefundError(null);
     const qtyToRefund = parseFloat(refundQtyInput);
     const unrefunded = item.quantity - (item.refunded_quantity || 0);
 
     if (isNaN(qtyToRefund) || qtyToRefund <= 0 || qtyToRefund > unrefunded) {
-      alert(`Invalid refund quantity. Must be between 0 and ${unrefunded}`);
+      setRefundError(`Invalid refund quantity. Must be between 0 and ${unrefunded}`);
       return;
     }
 
@@ -62,8 +65,9 @@ export default function SaleDetailModal({
         refundReasonInput || 'Customer return'
       );
       setRefundingItemId(null);
-    } catch (err: any) {
-      alert('Failed to process refund: ' + (err.message || err));
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setRefundError('Failed to process refund: ' + message);
     } finally {
       setIsSubmittingRefund(false);
     }
@@ -195,6 +199,11 @@ export default function SaleDetailModal({
                             className="bg-agora-bg border border-agora-border rounded-lg py-1.5 px-2.5 text-xs text-agora-ink focus:outline-none focus:border-agora-brick"
                           />
                         </div>
+                        {refundError && (
+                          <div className="p-2 bg-agora-brick/10 border border-agora-brick/30 rounded-lg text-agora-brick text-[11px] font-medium">
+                            {refundError}
+                          </div>
+                        )}
                         <div className="flex gap-2 justify-end pt-1">
                           <button
                             type="button"

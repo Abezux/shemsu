@@ -10,16 +10,17 @@ Rule: one step at a time. Discuss → plan → approve → build → verify → 
   - A2: Naming standardized to "Agora" / `"agora"` across `package.json`, `manifest.json`, `sw.js`, and `localStorage` keys
   - A3: Dev-only mock mode & explicit Supabase error handling (removed silent `localStorage` fallbacks)
   - A4: Split `services/api.ts` into domain services (`common`, `products`, `sales`, `movements`, `settings`, `register`, `analytics`) with a unified `api` facade
+  - A5: Replaced all `any` types with strict TypeScript types and replaced browser `alert()` / `confirm()` calls with `ConfirmModal` and inline error banners
 - In progress: nothing yet
-- Next: A5 (Replace `any` with real types & replace browser `alert()` / `confirm()` calls with UI modals)
-- Blockers / questions for the owner: None currently. Ready to begin Task A5 planning.
+- Next: A6 (Move `seedDemo` out of `Navbar.tsx`)
+- Blockers / questions for the owner: None currently. Ready for Task A6.
 
 ## Phase A — Clean foundation (do before new features)
 - [x] A1. Repo hygiene: remove `tsconfig.tsbuildinfo` from git, delete `.babelrc`, add `README.md` (setup, env vars, Supabase schema steps, commands)
 - [x] A2. Decide the naming: standard product name "Agora" & package "agora"; update `package.json`, `manifest.json`, `index.html`, localStorage keys
 - [x] A3. Decide on local mock mode: keep as dev-only; removed silent localStorage fallbacks on Supabase errors (errors thrown explicitly to views)
 - [x] A4. Split `services/api.ts` by domain (products, sales, settings, register, analytics helpers) with no behavior change; keep the build green after each split
-- [ ] A5. Replace `any` with real types; replace `alert()` / `confirm()` with a modal or bottom sheet
+- [x] A5. Replace `any` with real types; replace `alert()` / `confirm()` with a modal or bottom sheet
 - [ ] A6. Move `seedDemo` out of `Navbar.tsx`
 - [ ] A7. Add ESLint + Prettier, then a small test setup (Vitest) covering `utils/revenue.ts` and `utils/currency.ts`
 - [ ] A8. Navigation: replace the hand-rolled hash handling with a proper router; remove the `landing` tab from the logged-in app

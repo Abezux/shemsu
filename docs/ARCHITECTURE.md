@@ -23,7 +23,7 @@ src/
     AuditView         Stock movement / activity log
     AnalyticsView     Charts and metrics
   components/
-    common/           BottomSheet, FilterSheet, ListRow, ListSkeleton, ProductAvatar, ImagePlaceholder
+    common/           BottomSheet, ConfirmModal, FilterSheet, ListRow, ListSkeleton, ProductAvatar, ImagePlaceholder
     navigation/       Navbar (also exports Sidebar), AgoraLogo
     pos/              ProductTile, CartDrawer, CheckoutModal
     inventory/        AddEditProductModal, RestockModal
@@ -66,7 +66,7 @@ Tokens live in `tailwind.config.ts` under `agora.*` (bg, card, border, ink, terr
 1. (Resolved in A4) Split `services/api.ts` into modular domain services (`products`, `sales`, `movements`, `settings`, `register`, `analytics`) re-exported via `api.ts` facade.
 2. (Resolved in A3) Removed silent localStorage fallbacks on Supabase errors; queries now throw explicit errors.
 3. (Resolved in A3) Retained Local Mock Mode strictly as a dev-only fallback when `.env` is unconfigured.
-4. About 17 uses of `any`; about 18 `alert()` / `confirm()` calls.
+4. (Resolved in A5) Eliminated all `any` types and replaced native `alert()` / `confirm()` calls with `ConfirmModal` and inline error banners.
 5. Hand-rolled hash navigation in `App.tsx`; a `landing` tab also exists inside the logged-in app. Production bundle is one 962 kB JS file (no code splitting).
 6. `LandingView.tsx` is 685 lines in one file; the large views (Sell, Inventory, Analytics, Sales) are 450–510 lines each and load their own data inline.
 7. `Navbar.tsx` calls `api.seedDemo()` (data logic inside a navigation component).
@@ -80,3 +80,4 @@ Tokens live in `tailwind.config.ts` under `agora.*` (bg, card, border, ink, terr
 - 2026-10-06: A2 naming — standardized product name to "Agora", package name to "agora", and local storage keys to "agora_*" (with automatic fallback migration for legacy shemsu_* keys).
 - 2026-10-07: A3 mock mode & error handling — retained Local Mock Mode strictly for development without Supabase keys, and removed silent localStorage fallbacks when Supabase is configured.
 - 2026-10-07: A4 domain split — modularized `src/services/` into domain-specific services with a unified `api` facade export.
+- 2026-10-07: A5 types & modals — replaced all 14 `any` types with strict interfaces/unions, and replaced all 18 `alert()` / `confirm()` calls with inline error banners and a reusable `ConfirmModal`.

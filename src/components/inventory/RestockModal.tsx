@@ -24,12 +24,14 @@ export default function RestockModal({
   const [addQuantity, setAddQuantity] = useState<number>(10);
   const [note, setNote] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
       setAddQuantity(suggestedQuantity && suggestedQuantity > 0 ? suggestedQuantity : 10);
       setNote('');
       setIsSubmitting(false);
+      setError(null);
     }
   }, [isOpen, suggestedQuantity]);
 
@@ -37,8 +39,9 @@ export default function RestockModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     if (addQuantity <= 0) {
-      alert('Please enter a quantity greater than 0');
+      setError('Please enter a quantity greater than 0');
       return;
     }
 
@@ -46,8 +49,9 @@ export default function RestockModal({
     try {
       await onRestock(product.id, addQuantity, note);
       onClose();
-    } catch (err: any) {
-      alert('Failed to restock product: ' + (err.message || err));
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setError('Failed to restock product: ' + message);
     } finally {
       setIsSubmitting(false);
     }
@@ -151,6 +155,12 @@ export default function RestockModal({
               className="w-full bg-agora-bg border border-agora-border rounded-xl py-2 px-3 text-xs text-agora-ink placeholder-agora-ink-muted/60 focus:outline-none focus:border-agora-terracotta"
             />
           </div>
+
+          {error && (
+            <div className="p-3 bg-agora-brick/10 border border-agora-brick/30 rounded-xl text-agora-brick text-xs font-medium">
+              {error}
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex items-center gap-3 pt-2">

@@ -56,6 +56,7 @@ export default function CheckoutModal({
   const [notes, setNotes] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [completedSale, setCompletedSale] = useState<Sale | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Calculations
   const subtotalInCents = cart.reduce(
@@ -94,6 +95,7 @@ export default function CheckoutModal({
       setDiscountInput('');
       setDiscountReason('');
       setSplitAllocations({ CASH: '', MOBILE_MONEY: '', CARD: '', OTHER: '' });
+      setError(null);
     }
   }, [isOpen]);
 
@@ -124,13 +126,14 @@ export default function CheckoutModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     setIsSubmitting(true);
     try {
       let paymentsToSend: { method: string; amount: number }[] = [];
 
       if (isSplitPayment) {
         if (remainingToAllocateInCents !== 0) {
-          alert('Allocated split payment must equal the exact final total due!');
+          setError('Allocated split payment must equal the exact final total due!');
           setIsSubmitting(false);
           return;
         }
@@ -143,7 +146,7 @@ export default function CheckoutModal({
           .filter((p) => p.amount > 0);
 
         if (paymentsToSend.length === 0) {
-          alert('Please allocate payment amounts to at least one method.');
+          setError('Please allocate payment amounts to at least one method.');
           setIsSubmitting(false);
           return;
         }
@@ -161,8 +164,9 @@ export default function CheckoutModal({
       if (sale) {
         setCompletedSale(sale);
       }
-    } catch (err: any) {
-      alert('Failed to complete sale: ' + (err.message || err));
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setError('Failed to complete sale: ' + message);
       setIsSubmitting(false);
     }
   };
@@ -503,6 +507,12 @@ export default function CheckoutModal({
                   className="w-full bg-agora-bg border border-agora-border rounded-xl py-2 px-3 text-xs text-agora-ink placeholder:text-agora-ink-muted/80 focus:outline-none focus:border-agora-terracotta"
                 />
               </div>
+
+              {error && (
+                <div className="p-3 bg-agora-brick/10 border border-agora-brick/30 rounded-xl text-agora-brick text-xs font-medium">
+                  {error}
+                </div>
+              )}
 
               {/* Thumb-Zone Ergonomic Action Buttons */}
               <div className="flex items-center gap-3 pt-2 shrink-0">

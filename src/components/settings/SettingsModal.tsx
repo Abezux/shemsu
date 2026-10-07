@@ -36,6 +36,7 @@ export default function SettingsModal({
   const [newType, setNewType] = useState<'text' | 'number' | 'date' | 'boolean'>('text');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -45,6 +46,7 @@ export default function SettingsModal({
       setBusinessType(settings.business_type || 'GENERAL_RETAIL');
       setExpiryAlertDays(settings.expiry_alert_days || 30);
       setCustomAttributes(settings.custom_attributes || []);
+      setError(null);
     }
   }, [isOpen, settings]);
 
@@ -56,10 +58,11 @@ export default function SettingsModal({
   };
 
   const handleAddCustomAttribute = () => {
+    setError(null);
     if (!newLabel.trim()) return;
     const key = newKey.trim() || newLabel.toLowerCase().replace(/[^a-z0-9]/g, '_');
     if (customAttributes.some((a) => a.key === key)) {
-      alert('An attribute with this key already exists.');
+      setError('An attribute with this key already exists.');
       return;
     }
     setCustomAttributes([...customAttributes, { key, label: newLabel.trim(), type: newType }]);
@@ -74,6 +77,7 @@ export default function SettingsModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     setIsSubmitting(true);
     try {
       await onSave({
@@ -86,8 +90,9 @@ export default function SettingsModal({
         custom_attributes: customAttributes,
       });
       onClose();
-    } catch (err: any) {
-      alert('Failed to save settings: ' + (err.message || err));
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setError('Failed to save settings: ' + message);
     } finally {
       setIsSubmitting(false);
     }
@@ -241,7 +246,7 @@ export default function SettingsModal({
                 />
                 <select
                   value={newType}
-                  onChange={(e) => setNewType(e.target.value as any)}
+                  onChange={(e) => setNewType(e.target.value as 'text' | 'number' | 'date' | 'boolean')}
                   className="bg-agora-card border border-agora-border rounded-xl px-2 py-1.5 text-xs text-agora-ink focus:outline-none"
                 >
                   <option value="text">Text</option>
@@ -259,6 +264,12 @@ export default function SettingsModal({
               </button>
             </div>
           </div>
+
+          {error && (
+            <div className="p-3 bg-agora-brick/10 border border-agora-brick/30 rounded-xl text-agora-brick text-xs font-medium">
+              {error}
+            </div>
+          )}
 
           {/* Action Buttons */}
           <div className="flex items-center gap-3 pt-3 border-t border-agora-border">

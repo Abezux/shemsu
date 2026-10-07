@@ -1,4 +1,4 @@
-import { Sale, SaleItem, Product, StockMovement } from '@/types';
+import { Sale, SaleItem, Product, StockMovement, Refund } from '@/types';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { SALES_KEY, PRODUCTS_KEY, MOVEMENTS_KEY, REFUNDS_KEY, getLocal, setLocal, getActiveStoreId } from './common';
 
@@ -175,7 +175,7 @@ export async function processRefund(
   const products = getLocal<Product[]>(PRODUCTS_KEY, []);
   const sales = getLocal<Sale[]>(SALES_KEY, []);
   const movements = getLocal<StockMovement[]>(MOVEMENTS_KEY, []);
-  const refunds = getLocal<any[]>(REFUNDS_KEY, []);
+  const refunds = getLocal<Refund[]>(REFUNDS_KEY, []);
   const now = new Date().toISOString();
 
   const sale = sales.find((s) => s.id === saleId);

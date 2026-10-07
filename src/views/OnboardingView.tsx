@@ -57,8 +57,9 @@ export default function OnboardingView() {
       }
 
       window.location.reload();
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to complete setup');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to complete setup';
+      setErrorMsg(message);
     } finally {
       setIsSubmitting(false);
     }

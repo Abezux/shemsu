@@ -6,6 +6,7 @@ import { api } from '@/services/api';
 import { formatCurrency } from '@/utils/currency';
 import AddEditProductModal from '@/components/inventory/AddEditProductModal';
 import RestockModal from '@/components/inventory/RestockModal';
+import ConfirmModal from '@/components/common/ConfirmModal';
 import ListRow, { SwipeAction } from '@/components/common/ListRow';
 import FilterSheet from '@/components/common/FilterSheet';
 import ListSkeleton from '@/components/common/ListSkeleton';
@@ -49,6 +50,9 @@ export default function InventoryView() {
   const [isRestockOpen, setIsRestockOpen] = useState(false);
   const [productToRestock, setProductToRestock] = useState<Product | null>(null);
 
+  const [productToDelete, setProductToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const [isLoading, setIsLoading] = useState(true);
 
   const loadData = async () => {
@@ -58,7 +62,7 @@ export default function InventoryView() {
       setProducts(prods);
       setSettings(stgs);
       setSales(salesData);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Error loading products:', err);
     } finally {
       setIsLoading(false);
@@ -178,7 +182,7 @@ export default function InventoryView() {
     setIsRestockOpen(true);
   };
 
-  const handleSaveProduct = async (productData: any) => {
+  const handleSaveProduct = async (productData: Partial<Product> & { name: string; price: number; stock_quantity: number }) => {
     await api.saveProduct(productData);
     await loadData();
   };
@@ -188,10 +192,17 @@ export default function InventoryView() {
     await loadData();
   };
 
-  const handleDeleteProduct = async (id: string, name: string) => {
-    if (confirm(`Remove "${name}" from catalog?`)) {
-      await api.deleteProduct(id);
+  const handleConfirmDeleteProduct = async () => {
+    if (!productToDelete) return;
+    setIsDeleting(true);
+    try {
+      await api.deleteProduct(productToDelete.id);
+      setProductToDelete(null);
       await loadData();
+    } catch (err: unknown) {
+      console.error('Failed to delete product:', err);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -390,6 +401,13 @@ export default function InventoryView() {
                     bgColorClass: 'bg-agora-brass text-agora-card',
                     onClick: () => handleOpenEdit(p),
                   },
+                  {
+                    id: 'delete',
+                    label: 'Delete',
+                    icon: Trash2,
+                    bgColorClass: 'bg-agora-brick text-agora-card',
+                    onClick: () => setProductToDelete({ id: p.id, name: p.name }),
+                  },
                 ];
 
                 return (
@@ -466,6 +484,7 @@ export default function InventoryView() {
         currencySymbol={settings.currency_symbol}
         onClose={() => setIsAddEditOpen(false)}
         onSave={handleSaveProduct}
+        onDelete={(id, name) => setProductToDelete({ id, name })}
       />
 
       <RestockModal
@@ -474,6 +493,17 @@ export default function InventoryView() {
         suggestedQuantity={productToRestock ? restockSuggestions[productToRestock.id] : undefined}
         onClose={() => setIsRestockOpen(false)}
         onRestock={handleRestockProduct}
+      />
+
+      <ConfirmModal
+        isOpen={!!productToDelete}
+        onClose={() => setProductToDelete(null)}
+        onConfirm={handleConfirmDeleteProduct}
+        title="Remove Product"
+        message={`Are you sure you want to remove "${productToDelete?.name}" from your catalog?`}
+        confirmText="Delete Product"
+        isDanger
+        isLoading={isDeleting}
       />
     </div>
   );

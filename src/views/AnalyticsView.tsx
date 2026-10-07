@@ -135,7 +135,10 @@ export default function AnalyticsView() {
     return api.getStockHealthData(products, settings.expiry_alert_days || 30);
   }, [products, settings]);
 
-  const handleOpenDrilldown = (title: string, metricType: any) => {
+  const handleOpenDrilldown = (
+    title: string,
+    metricType: 'REVENUE' | 'SALES' | 'UNITS' | 'STOCK_HEALTH' | 'HOURLY'
+  ) => {
     setDrilldownState({
       isOpen: true,
       title,
@@ -289,7 +292,7 @@ export default function AnalyticsView() {
               <Tooltip
                 trigger="hover"
                 contentStyle={{ backgroundColor: '#FFFDF8', borderColor: '#E5DCC8', borderRadius: '12px', color: '#211D1A' }}
-                formatter={(value: any) => [
+                formatter={(value: unknown) => [
                   formatCurrency(Number(value), settings.currency_symbol),
                   'Revenue',
                 ]}
@@ -337,8 +340,8 @@ export default function AnalyticsView() {
                 <YAxis stroke="#6E655F" fontSize={10} tickLine={false} />
                 <Tooltip
                   contentStyle={{ backgroundColor: '#FFFDF8', borderColor: '#E5DCC8', borderRadius: '12px', color: '#211D1A' }}
-                  formatter={(value: any, name: any) => [
-                    name === 'revenue' ? formatCurrency(Number(value), settings.currency_symbol) : value,
+                  formatter={(value: unknown, name: unknown) => [
+                    name === 'revenue' ? formatCurrency(Number(value), settings.currency_symbol) : (value as React.ReactNode),
                     name === 'revenue' ? 'Revenue' : 'Sales',
                   ]}
                 />

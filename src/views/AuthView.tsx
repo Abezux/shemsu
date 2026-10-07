@@ -49,8 +49,9 @@ export default function AuthView({ initialMode = 'LOGIN', onBackToLanding }: Aut
         if (res.error) setErrorMsg(res.error);
         else setSuccessMsg('Password reset instructions sent to your email.');
       }
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Authentication error');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Authentication error';
+      setErrorMsg(message);
     } finally {
       setIsSubmitting(false);
     }

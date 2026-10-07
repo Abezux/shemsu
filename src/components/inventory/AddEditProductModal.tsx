@@ -3,7 +3,7 @@ import { Product, ProductCategory, UnitType, StoreSettings } from '@/types';
 import { parseInputToCents, centsToDecimalString } from '@/utils/currency';
 import { api } from '@/services/api';
 import BottomSheet from '@/components/common/BottomSheet';
-import { X, Package, AlertCircle, Star } from 'lucide-react';
+import { X, Package, AlertCircle, Star, Trash2 } from 'lucide-react';
 import ProductAvatar from '@/components/common/ProductAvatar';
 
 interface AddEditProductModalProps {
@@ -12,6 +12,7 @@ interface AddEditProductModalProps {
   currencySymbol: string;
   onClose: () => void;
   onSave: (product: Partial<Product> & { name: string; price: number; stock_quantity: number }) => Promise<void>;
+  onDelete?: (productId: string, name: string) => void;
 }
 
 const CATEGORIES: ProductCategory[] = [
@@ -38,6 +39,7 @@ export default function AddEditProductModal({
   currencySymbol,
   onClose,
   onSave,
+  onDelete,
 }: AddEditProductModalProps) {
   const [name, setName] = useState('');
   const [category, setCategory] = useState<string>('Beverages');
@@ -48,12 +50,14 @@ export default function AddEditProductModal({
   const [unitType, setUnitType] = useState<UnitType>('piece');
   const [imageUrl, setImageUrl] = useState<string>('');
   const [isFavorite, setIsFavorite] = useState<boolean>(false);
-  const [attributes, setAttributes] = useState<Record<string, any>>({});
+  const [attributes, setAttributes] = useState<Record<string, string | number | boolean>>({});
   const [settings, setSettings] = useState<StoreSettings | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
+      setError(null);
       api.getSettings().then(setSettings).catch(() => {});
 
       if (productToEdit) {
@@ -85,19 +89,20 @@ export default function AddEditProductModal({
 
   if (!isOpen) return null;
 
-  const handleAttrChange = (key: string, value: any) => {
+  const handleAttrChange = (key: string, value: string | number | boolean) => {
     setAttributes((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     if (!name.trim()) {
-      alert('Product name is required');
+      setError('Product name is required');
       return;
     }
     const priceCents = parseInputToCents(priceInput);
     if (priceCents <= 0) {
-      alert('Please enter a valid price greater than 0');
+      setError('Please enter a valid price greater than 0');
       return;
     }
 
@@ -117,8 +122,9 @@ export default function AddEditProductModal({
         is_favorite: isFavorite,
       });
       onClose();
-    } catch (err: any) {
-      alert('Failed to save product: ' + (err.message || err));
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setError('Failed to save product: ' + message);
     } finally {
       setIsSubmitting(false);
     }
@@ -281,7 +287,7 @@ export default function AddEditProductModal({
                     <label className="text-[11px] font-bold text-agora-ink">Expiry Date</label>
                     <input
                       type="date"
-                      value={attributes.expiry_date || ''}
+                      value={String(attributes.expiry_date || '')}
                       onChange={(e) => handleAttrChange('expiry_date', e.target.value)}
                       className="w-full bg-agora-card border border-agora-border rounded-xl px-2.5 py-1.5 text-xs text-agora-ink"
                     />
@@ -292,7 +298,7 @@ export default function AddEditProductModal({
                     <input
                       type="text"
                       placeholder="e.g. BCH-901"
-                      value={attributes.batch_no || ''}
+                      value={String(attributes.batch_no || '')}
                       onChange={(e) => handleAttrChange('batch_no', e.target.value)}
                       className="w-full bg-agora-card border border-agora-border rounded-xl px-2.5 py-1.5 text-xs text-agora-ink"
                     />
@@ -319,8 +325,8 @@ export default function AddEditProductModal({
                   <input
                     type="number"
                     placeholder="15"
-                    value={attributes.prep_time_mins || ''}
-                    onChange={(e) => handleAttrChange('prep_time_mins', parseInt(e.target.value) || '')}
+                    value={String(attributes.prep_time_mins || '')}
+                    onChange={(e) => handleAttrChange('prep_time_mins', parseInt(e.target.value) || 0)}
                     className="w-full bg-agora-card border border-agora-border rounded-xl px-2.5 py-1.5 text-xs text-agora-ink"
                   />
                 </div>
@@ -330,7 +336,7 @@ export default function AddEditProductModal({
                   <input
                     type="text"
                     placeholder="e.g. Nuts, Dairy"
-                    value={attributes.allergens || ''}
+                    value={String(attributes.allergens || '')}
                     onChange={(e) => handleAttrChange('allergens', e.target.value)}
                     className="w-full bg-agora-card border border-agora-border rounded-xl px-2.5 py-1.5 text-xs text-agora-ink"
                   />
@@ -339,8 +345,27 @@ export default function AddEditProductModal({
             )}
           </div>
 
+          {error && (
+            <div className="p-3 bg-agora-brick/10 border border-agora-brick/30 rounded-xl text-agora-brick text-xs font-medium">
+              {error}
+            </div>
+          )}
+
           {/* Buttons */}
           <div className="flex items-center gap-3 pt-3 border-t border-agora-border">
+            {productToEdit && onDelete && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onDelete(productToEdit.id, productToEdit.name);
+                }}
+                className="p-3 bg-agora-brick/10 hover:bg-agora-brick/20 text-agora-brick font-bold rounded-xl text-sm border border-agora-brick/30 transition-all shrink-0"
+                title="Delete product"
+              >
+                <Trash2 className="w-4 h-4 text-agora-brick" />
+              </button>
+            )}
             <button
               type="button"
               onClick={onClose}

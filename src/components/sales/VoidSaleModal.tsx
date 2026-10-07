@@ -22,13 +22,15 @@ export default function VoidSaleModal({
 }: VoidSaleModalProps) {
   const [reason, setReason] = useState<string>('Customer returned items / mistake at register');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (!isOpen || !sale) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     if (!reason.trim()) {
-      alert('Please specify a reason for voiding this sale.');
+      setError('Please specify a reason for voiding this sale.');
       return;
     }
 
@@ -36,8 +38,9 @@ export default function VoidSaleModal({
     try {
       await onConfirmVoid(sale.id, reason.trim());
       onClose();
-    } catch (err) {
-      alert('Failed to void sale: ' + err);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setError('Failed to void sale: ' + message);
     } finally {
       setIsSubmitting(false);
     }
@@ -80,6 +83,12 @@ export default function VoidSaleModal({
               className="w-full bg-agora-bg border border-agora-border rounded-xl p-3 text-xs text-agora-ink focus:outline-none focus:border-agora-brick"
             />
           </div>
+
+          {error && (
+            <div className="p-3 bg-agora-brick/10 border border-agora-brick/30 rounded-xl text-agora-brick text-xs font-medium">
+              {error}
+            </div>
+          )}
 
           <div className="flex items-center gap-3 pt-2">
             <button

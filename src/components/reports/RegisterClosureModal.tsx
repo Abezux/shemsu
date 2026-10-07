@@ -28,6 +28,7 @@ export default function RegisterClosureModal({
   const [notes, setNotes] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -38,7 +39,7 @@ export default function RegisterClosureModal({
       setTotalCashRefunds(data.totalCashRefunds);
       setPeriodStart(data.periodStart);
       setCountedCashInput((data.expectedCash / 100).toString());
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Error calculating expected cash:', err);
     } finally {
       setIsLoading(false);
@@ -49,6 +50,7 @@ export default function RegisterClosureModal({
     if (isOpen) {
       loadData();
       setNotes('');
+      setError(null);
     }
   }, [isOpen]);
 
@@ -59,12 +61,14 @@ export default function RegisterClosureModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     setIsSubmitting(true);
     try {
       await onConfirmClosure(countedCashInCents, notes || undefined);
       onClose();
-    } catch (err: any) {
-      alert('Failed to close register: ' + (err.message || err));
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setError('Failed to close register: ' + message);
     } finally {
       setIsSubmitting(false);
     }
@@ -196,6 +200,12 @@ export default function RegisterClosureModal({
               className="w-full bg-agora-bg border border-agora-border rounded-xl py-2 px-3 text-xs text-agora-ink placeholder:text-agora-ink-muted/80 focus:outline-none focus:border-agora-terracotta"
             />
           </div>
+
+          {error && (
+            <div className="p-3 bg-agora-brick/10 border border-agora-brick/30 rounded-xl text-agora-brick text-xs font-medium">
+              {error}
+            </div>
+          )}
 
           {/* Thumb-Zone Ergonomic Buttons */}
           <div className="flex items-center gap-3 pt-2 shrink-0">
