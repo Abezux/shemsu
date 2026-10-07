@@ -9,7 +9,7 @@ import { formatCurrency } from '@/utils/currency';
 import { 
   Search, 
   AlertTriangle, 
-  Sparkles, 
+  Plus, 
   ShoppingCart, 
   RefreshCw, 
   ShoppingBag, 
@@ -330,18 +330,17 @@ export default function SellView() {
               <h3 className="font-serif font-bold text-agora-ink text-base sm:text-lg">No products found</h3>
               <p className="text-xs text-agora-ink-muted max-w-xs mx-auto">
                 {products.length === 0
-                  ? 'Your catalog is empty. Click "Load Samples" in top bar.'
+                  ? 'Your catalog is empty. Add products to start selling.'
                   : 'Try clearing your search query or choosing a different category.'}
               </p>
               {products.length === 0 && (
                 <button
-                  onClick={async () => {
-                    await api.seedDemo();
-                    loadData();
+                  onClick={() => {
+                    window.location.hash = 'inventory';
                   }}
                   className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-agora-terracotta text-agora-card text-xs font-serif font-bold rounded-xl shadow-md"
                 >
-                  <Sparkles className="w-4 h-4" /> Load Sample Products
+                  <Plus className="w-4 h-4" /> Go to Products
                 </button>
               )}
             </div>

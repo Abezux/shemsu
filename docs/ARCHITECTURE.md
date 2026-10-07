@@ -69,7 +69,7 @@ Tokens live in `tailwind.config.ts` under `agora.*` (bg, card, border, ink, terr
 4. (Resolved in A5) Eliminated all `any` types and replaced native `alert()` / `confirm()` calls with `ConfirmModal` and inline error banners.
 5. Hand-rolled hash navigation in `App.tsx`; a `landing` tab also exists inside the logged-in app. Production bundle is one 962 kB JS file (no code splitting).
 6. `LandingView.tsx` is 685 lines in one file; the large views (Sell, Inventory, Analytics, Sales) are 450–510 lines each and load their own data inline.
-7. `Navbar.tsx` calls `api.seedDemo()` (data logic inside a navigation component).
+7. (Resolved in A6) Purged `seedDemo()` out of `Navbar.tsx`; `Navbar.tsx` is now purely layout/navigation and user session controls.
 8. Repo hygiene: `tsconfig.tsbuildinfo` is committed though ignored; `.babelrc` references `next/babel` but this is a Vite project; no README, tests, linter, or formatter.
 9. Naming: standardized product name to "Agora", package to "agora", and localStorage keys to "agora_*" (with legacy key fallback).
 10. `index.html`: `user-scalable=no` blocks pinch-zoom (accessibility); canonical/OG URLs and image are placeholders.
@@ -81,3 +81,4 @@ Tokens live in `tailwind.config.ts` under `agora.*` (bg, card, border, ink, terr
 - 2026-10-07: A3 mock mode & error handling — retained Local Mock Mode strictly for development without Supabase keys, and removed silent localStorage fallbacks when Supabase is configured.
 - 2026-10-07: A4 domain split — modularized `src/services/` into domain-specific services with a unified `api` facade export.
 - 2026-10-07: A5 types & modals — replaced all 14 `any` types with strict interfaces/unions, and replaced all 18 `alert()` / `confirm()` calls with inline error banners and a reusable `ConfirmModal`.
+- 2026-10-07: A6 navbar refactor — removed `seedDemo()` and sample catalog buttons from `Navbar.tsx`; preserved `seedDemo` for onboarding and upcoming landing page demo flow.

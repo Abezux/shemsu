@@ -5,7 +5,6 @@ import {
   History, 
   FileText, 
   BarChart3, 
-  Sparkles,
   Wifi,
   Settings,
   LogOut,
@@ -22,7 +21,6 @@ import { api } from '@/services/api';
 import { StoreSettings } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import SettingsModal from '@/components/settings/SettingsModal';
-import ConfirmModal from '@/components/common/ConfirmModal';
 import AgoraLogo from './AgoraLogo';
 
 interface NavbarProps {
@@ -93,8 +91,6 @@ export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
     expiry_alert_days: store?.expiry_alert_days || 30,
     custom_attributes: [],
   });
-  const [isSeeding, setIsSeeding] = useState<boolean>(false);
-  const [showSeedConfirm, setShowSeedConfirm] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
 
@@ -117,21 +113,6 @@ export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
       loadSettings();
     }
   }, [store]);
-
-  const handleSeedConfirm = async () => {
-    setIsSeeding(true);
-    try {
-      await api.seedDemo();
-      setShowSeedConfirm(false);
-      window.location.reload();
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error('Error loading sample products:', message);
-      setShowSeedConfirm(false);
-    } finally {
-      setIsSeeding(false);
-    }
-  };
 
   const handleSaveSettings = async (newSettings: StoreSettings) => {
     await api.updateSettings(newSettings);
@@ -185,16 +166,6 @@ export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
           {/* Desktop Action Buttons (lg: and up) */}
           <div className="hidden lg:flex items-center gap-2 shrink-0">
             <button
-              onClick={() => setShowSeedConfirm(true)}
-              disabled={isSeeding}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-agora-terracotta/10 hover:bg-agora-terracotta/20 border border-agora-terracotta/30 text-agora-terracotta text-xs font-bold transition-all active:scale-95 disabled:opacity-50"
-              title="Load sample products"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-agora-terracotta" />
-              <span>{isSeeding ? 'Seeding...' : 'Load Samples'}</span>
-            </button>
-
-            <button
               onClick={() => setIsSettingsOpen(true)}
               className="p-2 rounded-xl bg-agora-brass/10 hover:bg-agora-brass/20 text-agora-brass border border-agora-brass/30 transition-all"
               title="Store settings"
@@ -243,15 +214,6 @@ export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
                 </div>
 
                 <div className="space-y-1 pt-1">
-                  <button
-                    onClick={() => setShowSeedConfirm(true)}
-                    disabled={isSeeding}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl bg-agora-terracotta/10 text-agora-terracotta font-bold hover:bg-agora-terracotta/20 transition-all text-left"
-                  >
-                    <Sparkles className="w-4 h-4 text-agora-terracotta" />
-                    <span>{isSeeding ? 'Seeding...' : 'Load Sample Products'}</span>
-                  </button>
-
                   <button
                     onClick={() => setIsSettingsOpen(true)}
                     className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl bg-agora-brass/10 text-agora-brass font-bold hover:bg-agora-brass/20 transition-all text-left"
@@ -304,17 +266,6 @@ export default function Navbar({ activeTab, onNavigate }: NavbarProps) {
         settings={settings}
         onClose={() => setIsSettingsOpen(false)}
         onSave={handleSaveSettings}
-      />
-
-      {/* Seed Demo Confirmation Modal */}
-      <ConfirmModal
-        isOpen={showSeedConfirm}
-        onClose={() => setShowSeedConfirm(false)}
-        onConfirm={handleSeedConfirm}
-        title="Load Sample Catalog?"
-        message="This will add demo items to your catalog and refresh your product list."
-        confirmText="Load Sample Catalog"
-        isLoading={isSeeding}
       />
     </>
   );
